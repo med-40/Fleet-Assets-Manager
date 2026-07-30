@@ -1,0 +1,50 @@
+from sqlalchemy import Column
+from sqlalchemy import Date
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+
+from app.database.base import Base
+
+
+class Mission(Base):
+
+    __tablename__ = "missions"
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+
+    equipment_id = Column(
+        Integer,
+        ForeignKey("equipment.id"),
+        nullable=False
+    )
+
+    driver_id = Column(
+        Integer,
+        ForeignKey("drivers.id")
+    )
+
+    destination = Column(
+        String(200)
+    )
+
+    start_date = Column(
+        Date,
+        nullable=False
+    )
+
+    end_date = Column(
+        Date
+    )
+
+    status = Column(
+        String(50),
+        default="Active"
+    )
+
+    notes = Column(
+        String(500)
+    )

@@ -1,4 +1,4 @@
-name: Build Fleet Assets Manager
+name: Build Windows EXE
 
 on:
   workflow_dispatch:
@@ -7,8 +7,8 @@ on:
       - main
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-windows:
+    runs-on: windows-latest
 
     steps:
       - name: Checkout repository
@@ -25,12 +25,12 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Build application
+      - name: Build Windows application
         run: |
-          pyinstaller --name FleetAssetsManager --onefile create_database.py
+          pyinstaller --name FleetAssetsManager --onefile --windowed app/main.py
 
-      - name: Upload application
+      - name: Upload Windows EXE
         uses: actions/upload-artifact@v4
         with:
-          name: FleetAssetsManager
-          path: dist/FleetAssetsManager
+          name: FleetAssetsManager-Windows
+          path: dist/FleetAssetsManager.exe

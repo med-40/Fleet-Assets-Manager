@@ -1,5 +1,6 @@
 import sys
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
     QLabel,
@@ -14,27 +15,58 @@ class FleetAssetsManager(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Fleet Assets Manager")
-        self.resize(1000, 650)
+        self.setWindowTitle("نظام تسيير الحضيرة")
+        self.resize(1100, 700)
+
+        # الاتجاه من اليمين إلى اليسار
+        self.setLayoutDirection(Qt.RightToLeft)
 
         central_widget = QWidget()
         layout = QVBoxLayout()
 
-        title = QLabel("Fleet Assets Manager")
+        title = QLabel("نظام تسيير الحضيرة")
+        title.setAlignment(Qt.AlignRight)
         title.setStyleSheet(
-            "font-size: 28px; font-weight: bold;"
+            """
+            font-size: 30px;
+            font-weight: bold;
+            padding: 20px;
+            """
         )
 
-        welcome = QLabel(
-            "Welcome to Fleet Assets Manager"
+        subtitle = QLabel(
+            "إدارة السيارات والصيانة والوقود والمهمات"
+        )
+        subtitle.setAlignment(Qt.AlignRight)
+        subtitle.setStyleSheet(
+            """
+            font-size: 18px;
+            padding: 10px 20px;
+            """
         )
 
         layout.addWidget(title)
-        layout.addWidget(welcome)
+        layout.addWidget(subtitle)
+        layout.addStretch()
 
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
 
+
+def main():
+
+    app = QApplication(sys.argv)
+
+    app.setLayoutDirection(Qt.RightToLeft)
+
+    window = FleetAssetsManager()
+    window.show()
+
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()
 
 def main():
 

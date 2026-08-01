@@ -32,40 +32,40 @@ jobs:
         run: |
           python -c "from web.main import app; print(app.title)"
 
-      - name: Start FastAPI server
+      - name: Start Uvicorn
         run: |
-          python run_web.py > web_server.log 2>&1 &
-          SERVER_PID=$!
-          echo "SERVER_PID=$SERVER_PID"
+          python -m uvicorn web.main:app --host 127.0.0.1 --port 8000 > web_server.log 2>&1 &
+          echo $! > server.pid
           sleep 5
 
-          if ! kill -0 $SERVER_PID 2>/dev/null; then
-            echo "FastAPI server stopped unexpectedly."
-            cat web_server.log || true
-            exit 1
-          fi
-
       - name: Show server log
-        if: always()
         run: |
-          echo "===== FastAPI SERVER LOG ====="
+          echo "===== FASTAPI SERVER LOG ====="
           cat web_server.log || true
           echo "===== END SERVER LOG ====="
 
-      - name: Test Web Page
+      - name: Check server process
         run: |
-          python -c "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:8000/'); content = response.read().decode(); assert 'نظام تسيير الحضيرة' in content; print('Web page OK')"
+          if ! kill -0 $(cat server.pid) 2>/dev/null; then
+            echo "FastAPI server failed to start."
+            exit 1
+          fi
 
-      - name: Test Database Endpoint
+      - name: Test Home Page
+        run: |
+          python -c "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:8000/'); content = response.read().decode(); assert 'نظام تسيير الحضيرة' in content; print('Home page OK')"
+
+      - name: Test Health
         run: |
           python -c "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:8000/health'); print(response.read().decode())"
 
-      - name: Test Dashboard Page
+      - name: Test Dashboard
         run: |
           python -c "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:8000/dashboard'); content = response.read().decode(); assert 'لوحة التحكم' in content; print('Dashboard OK')"
 
       - name: Final server log
         if: failure()
         run: |
-          echo "===== FINAL SERVER LOG ====="
+          echo "===== FINAL FASTAPI SERVER LOG ====="
           cat web_server.log || true
+          echo "===== END FINAL LOG ====="

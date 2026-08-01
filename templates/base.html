@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+        {% block title %}
+        نظام تسيير الحضيرة
+        {% endblock %}
+    </title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        .app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* القائمة الجانبية */
+
+        .sidebar {
+            width: 240px;
+            background: #ffffff;
+            border-left: 1px solid #ddd;
+            padding: 20px 15px;
+
+            position: fixed;
+            right: 0;
+            top: 0;
+            bottom: 0;
+
+            overflow-y: auto;
+        }
+
+        .logo {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 15px 5px 25px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 15px;
+        }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .menu a {
+            display: block;
+            text-decoration: none;
+            color: #333;
+
+            padding: 12px 15px;
+
+            border-radius: 7px;
+
+            font-size: 15px;
+
+            transition: 0.2s;
+        }
+
+        .menu a:hover {
+            background: #eeeeee;
+        }
+
+        .menu a.active {
+            background: #e6e6e6;
+            font-weight: bold;
+        }
+
+        /* المحتوى */
+
+        .content {
+            flex: 1;
+
+            margin-right: 240px;
+
+            min-height: 100vh;
+        }
+
+        .topbar {
+            background: white;
+            padding: 18px 30px;
+
+            border-bottom: 1px solid #ddd;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .user-info {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .page-content {
+            padding: 30px;
+        }
+
+        @media (max-width: 800px) {
+
+            .sidebar {
+                width: 200px;
+            }
+
+            .content {
+                margin-right: 200px;
+            }
+
+        }
+
+    </style>
+
+    {% block head %}
+    {% endblock %}
+
+</head>
+
+<body>
+
+<div class="app">
+
+    <aside class="sidebar">
+
+        <div class="logo">
+            نظام تسيير الحضيرة
+        </div>
+
+        <nav class="menu">
+
+            <a href="/dashboard">
+                📊 لوحة التحكم
+            </a>
+
+            <a href="#">
+                🚗 السيارات والعتاد
+            </a>
+
+            <a href="#">
+                👨‍✈️ السائقون
+            </a>
+
+            <a href="#">
+                🛣️ المهمات
+            </a>
+
+            <a href="#">
+                ⛽ الوقود
+            </a>
+
+            <a href="#">
+                🔧 الصيانة
+            </a>
+
+            <a href="#">
+                🛠️ الأعطال والإصلاحات
+            </a>
+
+            <a href="#">
+                🔋 البطاريات
+            </a>
+
+            <a href="#">
+                🛞 الإطارات
+            </a>
+
+            <a href="#">
+                📦 قطع الغيار
+            </a>
+
+            <a href="#">
+                📄 التقارير
+            </a>
+
+            <a href="#">
+                ⚙️ الإعدادات
+            </a>
+
+        </nav>
+
+    </aside>
+
+
+    <main class="content">
+
+        <header class="topbar">
+
+            <div class="topbar-title">
+                نظام تسيير الحضيرة
+            </div>
+
+            <div class="user-info">
+                المستخدم: مسؤول النظام
+            </div>
+
+        </header>
+
+
+        <section class="page-content">
+
+            {% block content %}
+            {% endblock %}
+
+        </section>
+
+    </main>
+
+</div>
+
+</body>
+
+</html>

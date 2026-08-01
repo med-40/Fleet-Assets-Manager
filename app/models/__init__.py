@@ -2,7 +2,6 @@ from app.models.organization import Organization
 from app.models.branch import Branch
 from app.models.department import Department
 
-fro
 from app.models.permission import Permission
 from app.models.user import User
 from app.models.user_role import UserRole

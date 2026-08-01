@@ -1,7 +1,14 @@
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from sqlalchemy import text
 
 from app.database.session import SessionLocal
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+INDEX_FILE = BASE_DIR / "templates" / "index.html"
 
 
 app = FastAPI(
@@ -13,11 +20,7 @@ app = FastAPI(
 
 @app.get("/")
 def home():
-    return {
-        "application": "Fleet Assets Manager",
-        "status": "running",
-        "message": "نظام تسيير الحضيرة يعمل بنجاح"
-    }
+    return FileResponse(INDEX_FILE)
 
 
 @app.get("/health")

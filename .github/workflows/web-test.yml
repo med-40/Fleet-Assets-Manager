@@ -41,6 +41,10 @@ jobs:
         run: |
           python -c "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:8000/health'); print(response.read().decode())"
 
+      - name: Test Dashboard Page
+        run: |
+          python -c "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:8000/dashboard'); content = response.read().decode(); assert 'لوحة التحكم' in content; print('Dashboard OK')"
+
       - name: Show server log if needed
         if: failure()
         run: |

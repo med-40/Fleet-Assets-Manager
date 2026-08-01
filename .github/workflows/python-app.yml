@@ -37,8 +37,14 @@ jobs:
 
       - name: Test with pytest
         run: |
+          set +e
           pytest
           TEST_STATUS=$?
-          if [ $TEST_STATUS -ne 0 ] && [ $TEST_STATUS -ne 5 ]; then
-            exit $TEST_STATUS
+          set -e
+
+          if [ $TEST_STATUS -eq 5 ]; then
+            echo "No tests found. Continuing..."
+            exit 0
           fi
+
+          exit $TEST_STATUS

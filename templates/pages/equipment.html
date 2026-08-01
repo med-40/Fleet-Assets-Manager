@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}
+السيارات والعتاد - نظام تسيير الحضيرة
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+    .page-header {
+        margin-bottom: 25px;
+    }
+
+    .page-header h1 {
+        margin: 0;
+        font-size: 30px;
+    }
+
+    .page-header p {
+        margin: 8px 0 0;
+        color: #666;
+    }
+
+    .table-container {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1000px;
+    }
+
+    th {
+        background: #f1f3f5;
+        font-weight: bold;
+        white-space: nowrap;
+    }
+
+    th,
+    td {
+        padding: 13px 12px;
+        border-bottom: 1px solid #e5e5e5;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    tr:hover td {
+        background: #fafafa;
+    }
+
+    .status {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 6px;
+        background: #eeeeee;
+        font-size: 13px;
+    }
+
+    .workshop {
+        color: #b45309;
+        font-weight: bold;
+    }
+
+    .empty {
+        text-align: center;
+        padding: 50px;
+        color: #777;
+    }
+
+</style>
+
+
+<div class="page-header">
+
+    <h1>
+        السيارات والعتاد
+    </h1>
+
+    <p>
+        قائمة العتاد المسجل في المؤسسة
+    </p>
+
+</div>
+
+
+<div class="table-container">
+
+    {% if equipment_list %}
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>نوع العتاد</th>
+                <th>رقم التسجيل</th>
+                <th>رقم الهيكل</th>
+                <th>الطراز</th>
+                <th>نوع الوقود</th>
+                <th>معدل الاستهلاك</th>
+                <th>الحالة</th>
+                <th>المصلحة</th>
+                <th>الورشة الخارجية</th>
+                <th>وثيقة الإرسال</th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+            {% for equipment in equipment_list %}
+
+            <tr>
+
+                <td>
+                    {{ equipment.equipment_type.name
+                       if equipment.equipment_type
+                       else "-" }}
+                </td>
+
+                <td>
+                    {{ equipment.registration_number }}
+                </td>
+
+                <td>
+                    {{ equipment.chassis_number or "-" }}
+                </td>
+
+                <td>
+                    {{ equipment.model or "-" }}
+                </td>
+
+                <td>
+                    {{ equipment.fuel_type or "-" }}
+                </td>
+
+                <td>
+                    {{ equipment.fuel_consumption or "-" }}
+                </td>
+
+                <td>
+
+                    <span class="status">
+                        {{ equipment.status or "-" }}
+                    </span>
+
+                </td>
+
+                <td>
+                    {{ equipment.department or "-" }}
+                </td>
+
+                <td>
+
+                    {% if equipment.workshop_transfers %}
+
+                        {% set active_workshop = namespace(found=None) %}
+
+                        {% for transfer in equipment.workshop_transfers %}
+
+                            {% if transfer.status == "في الورشة" %}
+
+                                {% set active_workshop.found = transfer %}
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                        {% if active_workshop.found %}
+
+                            <span class="workshop">
+                                {{ active_workshop.found.workshop_name }}
+                            </span>
+
+                        {% else %}
+
+                            -
+
+                        {% endif %}
+
+                    {% else %}
+
+                        -
+
+                    {% endif %}
+
+                </td>
+
+                <td>
+
+                    {% if equipment.workshop_transfers %}
+
+                        {% set active_document = namespace(value=None) %}
+
+                        {% for transfer in equipment.workshop_transfers %}
+
+                            {% if transfer.status == "في الورشة" %}
+
+                                {% set active_document.value =
+                                    transfer.dispatch_document %}
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                        {{ active_document.value or "-" }}
+
+                    {% else %}
+
+                        -
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+    {% else %}
+
+        <div class="empty">
+            لا توجد سيارات أو معدات مسجلة حاليًا.
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

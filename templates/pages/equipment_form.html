@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}
+إضافة عتاد - نظام تسيير الحضيرة
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+    .form-header {
+        margin-bottom: 25px;
+    }
+
+    .form-header h1 {
+        margin: 0;
+        font-size: 30px;
+    }
+
+    .form-header p {
+        color: #666;
+    }
+
+    .form-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 25px;
+        max-width: 900px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+    }
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .field label {
+        font-weight: bold;
+    }
+
+    .field input,
+    .field select {
+        padding: 11px;
+        border: 1px solid #ccc;
+        border-radius: 7px;
+        font-size: 15px;
+    }
+
+    .full {
+        grid-column: 1 / -1;
+    }
+
+    .buttons {
+        margin-top: 25px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .button {
+        padding: 11px 22px;
+        border: none;
+        border-radius: 7px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 15px;
+    }
+
+    .save {
+        background: #198754;
+        color: white;
+    }
+
+    .cancel {
+        background: #eeeeee;
+        color: #333;
+    }
+
+    .error {
+        background: #ffe5e5;
+        color: #a00;
+        padding: 12px;
+        border-radius: 7px;
+        margin-bottom: 20px;
+    }
+
+</style>
+
+
+<div class="form-header">
+
+    <h1>
+        إضافة عتاد
+    </h1>
+
+    <p>
+        إدخال عتاد جديد إلى قاعدة البيانات
+    </p>
+
+</div>
+
+
+<div class="form-card">
+
+    {% if error %}
+
+        <div class="error">
+            {{ error }}
+        </div>
+
+    {% endif %}
+
+
+    <form method="post" action="/equipment/new">
+
+        <div class="form-grid">
+
+
+            <div class="field">
+
+                <label>
+                    نوع العتاد *
+                </label>
+
+                <input
+                    type="number"
+                    name="equipment_type_id"
+                    required
+                    placeholder="رقم نوع العتاد"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    رقم التسجيل *
+                </label>
+
+                <input
+                    type="text"
+                    name="registration_number"
+                    required
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    رقم الهيكل
+                </label>
+
+                <input
+                    type="text"
+                    name="chassis_number"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    الطراز
+                </label>
+
+                <input
+                    type="text"
+                    name="model"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    نوع الوقود
+                </label>
+
+                <input
+                    type="text"
+                    name="fuel_type"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    معدل الاستهلاك
+                </label>
+
+                <input
+                    type="text"
+                    name="fuel_consumption"
+                    placeholder="مثال: 8.5"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    الحالة
+                </label>
+
+                <select name="status">
+
+                    <option value="متاحة">
+                        متاحة
+                    </option>
+
+                    <option value="في مهمة">
+                        في مهمة
+                    </option>
+
+                    <option value="في الورشة">
+                        في الورشة
+                    </option>
+
+                    <option value="متوقفة">
+                        متوقفة
+                    </option>
+
+                    <option value="خارج الخدمة">
+                        خارج الخدمة
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    المصلحة
+                </label>
+
+                <input
+                    type="text"
+                    name="department"
+                >
+
+            </div>
+
+        </div>
+
+
+        <div class="buttons">
+
+            <button
+                type="submit"
+                class="button save"
+            >
+                حفظ العتاد
+            </button>
+
+
+            <a
+                href="/equipment"
+                class="button cancel"
+            >
+                إلغاء
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

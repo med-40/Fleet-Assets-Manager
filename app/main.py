@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 
+from app.database import create_database
+
 from ui.dashboard import DashboardPage
 from ui.vehicles import VehiclesPage
 
@@ -44,6 +46,7 @@ class FleetAssetsManager(QMainWindow):
 
         logo = QLabel("نظام تسيير الحضيرة")
         logo.setAlignment(Qt.AlignCenter)
+
         logo.setStyleSheet("""
             QLabel {
                 font-size: 20px;
@@ -55,29 +58,93 @@ class FleetAssetsManager(QMainWindow):
         sidebar_layout.addWidget(logo)
 
         # أزرار القائمة
-        self.dashboard_button = self.create_menu_button("لوحة التحكم")
-        self.vehicles_button = self.create_menu_button("السيارات")
-        self.drivers_button = self.create_menu_button("السائقون")
-        self.missions_button = self.create_menu_button("المهمات")
-        self.fuel_button = self.create_menu_button("الوقود")
-        self.maintenance_button = self.create_menu_button("الصيانة")
-        self.faults_button = self.create_menu_button("الأعطال")
-        self.batteries_button = self.create_menu_button("البطاريات")
-        self.tires_button = self.create_menu_button("الإطارات")
-        self.reports_button = self.create_menu_button("التقارير")
-        self.settings_button = self.create_menu_button("الإعدادات")
+        self.dashboard_button = self.create_menu_button(
+            "لوحة التحكم"
+        )
 
-        sidebar_layout.addWidget(self.dashboard_button)
-        sidebar_layout.addWidget(self.vehicles_button)
-        sidebar_layout.addWidget(self.drivers_button)
-        sidebar_layout.addWidget(self.missions_button)
-        sidebar_layout.addWidget(self.fuel_button)
-        sidebar_layout.addWidget(self.maintenance_button)
-        sidebar_layout.addWidget(self.faults_button)
-        sidebar_layout.addWidget(self.batteries_button)
-        sidebar_layout.addWidget(self.tires_button)
-        sidebar_layout.addWidget(self.reports_button)
-        sidebar_layout.addWidget(self.settings_button)
+        self.vehicles_button = self.create_menu_button(
+            "السيارات"
+        )
+
+        self.drivers_button = self.create_menu_button(
+            "السائقون"
+        )
+
+        self.missions_button = self.create_menu_button(
+            "المهمات"
+        )
+
+        self.fuel_button = self.create_menu_button(
+            "الوقود"
+        )
+
+        self.maintenance_button = self.create_menu_button(
+            "الصيانة"
+        )
+
+        self.faults_button = self.create_menu_button(
+            "الأعطال"
+        )
+
+        self.batteries_button = self.create_menu_button(
+            "البطاريات"
+        )
+
+        self.tires_button = self.create_menu_button(
+            "الإطارات"
+        )
+
+        self.reports_button = self.create_menu_button(
+            "التقارير"
+        )
+
+        self.settings_button = self.create_menu_button(
+            "الإعدادات"
+        )
+
+        sidebar_layout.addWidget(
+            self.dashboard_button
+        )
+
+        sidebar_layout.addWidget(
+            self.vehicles_button
+        )
+
+        sidebar_layout.addWidget(
+            self.drivers_button
+        )
+
+        sidebar_layout.addWidget(
+            self.missions_button
+        )
+
+        sidebar_layout.addWidget(
+            self.fuel_button
+        )
+
+        sidebar_layout.addWidget(
+            self.maintenance_button
+        )
+
+        sidebar_layout.addWidget(
+            self.faults_button
+        )
+
+        sidebar_layout.addWidget(
+            self.batteries_button
+        )
+
+        sidebar_layout.addWidget(
+            self.tires_button
+        )
+
+        sidebar_layout.addWidget(
+            self.reports_button
+        )
+
+        sidebar_layout.addWidget(
+            self.settings_button
+        )
 
         sidebar_layout.addStretch()
 
@@ -86,47 +153,85 @@ class FleetAssetsManager(QMainWindow):
 
         sidebar_layout.addWidget(version)
 
+        # =========================
         # منطقة الصفحات
+        # =========================
+
         self.pages = QStackedWidget()
 
         # الصفحة 0: Dashboard
         self.dashboard_page = DashboardPage()
-        self.pages.addWidget(self.dashboard_page)
+
+        self.pages.addWidget(
+            self.dashboard_page
+        )
 
         # الصفحة 1: السيارات
         self.vehicles_page = VehiclesPage()
-        self.pages.addWidget(self.vehicles_page)
 
-        # صفحات مؤقتة للأقسام الأخرى
         self.pages.addWidget(
-            self.create_placeholder_page("السائقون")
-        )
-        self.pages.addWidget(
-            self.create_placeholder_page("المهمات")
-        )
-        self.pages.addWidget(
-            self.create_placeholder_page("الوقود")
-        )
-        self.pages.addWidget(
-            self.create_placeholder_page("الصيانة")
-        )
-        self.pages.addWidget(
-            self.create_placeholder_page("الأعطال")
-        )
-        self.pages.addWidget(
-            self.create_placeholder_page("البطاريات")
-        )
-        self.pages.addWidget(
-            self.create_placeholder_page("الإطارات")
-        )
-        self.pages.addWidget(
-            self.create_placeholder_page("التقارير")
-        )
-        self.pages.addWidget(
-            self.create_placeholder_page("الإعدادات")
+            self.vehicles_page
         )
 
-        # ربط أزرار القائمة بالصفحات
+        # الصفحات المؤقتة
+        self.pages.addWidget(
+            self.create_placeholder_page(
+                "السائقون"
+            )
+        )
+
+        self.pages.addWidget(
+            self.create_placeholder_page(
+                "المهمات"
+            )
+        )
+
+        self.pages.addWidget(
+            self.create_placeholder_page(
+                "الوقود"
+            )
+        )
+
+        self.pages.addWidget(
+            self.create_placeholder_page(
+                "الصيانة"
+            )
+        )
+
+        self.pages.addWidget(
+            self.create_placeholder_page(
+                "الأعطال"
+            )
+        )
+
+        self.pages.addWidget(
+            self.create_placeholder_page(
+                "البطاريات"
+            )
+        )
+
+        self.pages.addWidget(
+            self.create_placeholder_page(
+                "الإطارات"
+            )
+        )
+
+        self.pages.addWidget(
+            self.create_placeholder_page(
+                "التقارير"
+            )
+        )
+
+        self.pages.addWidget(
+            self.create_placeholder_page(
+                "الإعدادات"
+            )
+        )
+
+        # =========================
+        # ربط أزرار القائمة
+        # =========================
+
         self.dashboard_button.clicked.connect(
             lambda: self.pages.setCurrentIndex(0)
         )
@@ -175,11 +280,13 @@ class FleetAssetsManager(QMainWindow):
         main_layout.addWidget(sidebar)
         main_layout.addWidget(self.pages)
 
-        # فتح Dashboard عند التشغيل
+        # فتح Dashboard
         self.pages.setCurrentIndex(0)
 
     def create_menu_button(self, text):
+
         button = QPushButton(text)
+
         button.setMinimumHeight(45)
 
         button.setStyleSheet("""
@@ -199,13 +306,23 @@ class FleetAssetsManager(QMainWindow):
         return button
 
     def create_placeholder_page(self, title):
+
         page = QWidget()
 
         layout = QVBoxLayout(page)
-        layout.setContentsMargins(30, 30, 30, 30)
+
+        layout.setContentsMargins(
+            30,
+            30,
+            30,
+            30
+        )
 
         label = QLabel(title)
-        label.setAlignment(Qt.AlignRight)
+
+        label.setAlignment(
+            Qt.AlignRight
+        )
 
         label.setStyleSheet("""
             QLabel {
@@ -215,20 +332,30 @@ class FleetAssetsManager(QMainWindow):
         """)
 
         layout.addWidget(label)
+
         layout.addStretch()
 
         return page
 
 
 def main():
+
+    # إنشاء قاعدة البيانات والجداول
+    create_database()
+
     app = QApplication(sys.argv)
 
-    app.setLayoutDirection(Qt.RightToLeft)
+    app.setLayoutDirection(
+        Qt.RightToLeft
+    )
 
     window = FleetAssetsManager()
+
     window.show()
 
-    sys.exit(app.exec())
+    sys.exit(
+        app.exec()
+    )
 
 
 if __name__ == "__main__":

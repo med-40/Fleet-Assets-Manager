@@ -1,11 +1,9 @@
 import sys
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (
-    QApplication,
-    QMainWindow,
-)
+from PySide6.QtWidgets import QApplication, QMainWindow
 
+from database import initialize_database
 from dashboard import Dashboard
 
 
@@ -17,18 +15,18 @@ class FleetAssetsManager(QMainWindow):
         self.setWindowTitle("نظام تسيير الحضيرة")
         self.resize(1200, 750)
 
-        # الاتجاه من اليمين إلى اليسار
         self.setLayoutDirection(Qt.RightToLeft)
 
-        # عرض لوحة التحكم
         self.dashboard = Dashboard()
         self.setCentralWidget(self.dashboard)
 
 
 def main():
 
-    app = QApplication(sys.argv)
+    # إنشاء قاعدة البيانات والجداول عند تشغيل البرنامج
+    initialize_database()
 
+    app = QApplication(sys.argv)
     app.setLayoutDirection(Qt.RightToLeft)
 
     window = FleetAssetsManager()

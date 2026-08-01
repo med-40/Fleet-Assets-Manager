@@ -9,6 +9,9 @@
 <style>
 
     .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 25px;
     }
 
@@ -20,6 +23,20 @@
     .page-header p {
         margin: 8px 0 0;
         color: #666;
+    }
+
+    .add-button {
+        display: inline-block;
+        padding: 11px 20px;
+        background: #198754;
+        color: white;
+        text-decoration: none;
+        border-radius: 7px;
+        font-weight: bold;
+    }
+
+    .add-button:hover {
+        background: #157347;
     }
 
     .table-container {
@@ -77,13 +94,24 @@
 
 <div class="page-header">
 
-    <h1>
-        السيارات والعتاد
-    </h1>
+    <div>
 
-    <p>
-        قائمة العتاد المسجل في المؤسسة
-    </p>
+        <h1>
+            السيارات والعتاد
+        </h1>
+
+        <p>
+            قائمة العتاد المسجل في المؤسسة
+        </p>
+
+    </div>
+
+    <a
+        href="/equipment/new"
+        class="add-button"
+    >
+        + إضافة عتاد
+    </a>
 
 </div>
 
@@ -121,9 +149,11 @@
             <tr>
 
                 <td>
-                    {{ equipment.equipment_type.name
-                       if equipment.equipment_type
-                       else "-" }}
+                    {% if equipment.equipment_type %}
+                        {{ equipment.equipment_type.name }}
+                    {% else %}
+                        -
+                    {% endif %}
                 </td>
 
                 <td>
@@ -147,11 +177,9 @@
                 </td>
 
                 <td>
-
                     <span class="status">
                         {{ equipment.status or "-" }}
                     </span>
-
                 </td>
 
                 <td>
@@ -160,31 +188,23 @@
 
                 <td>
 
-                    {% if equipment.workshop_transfers %}
+                    {% set active_workshop = namespace(found=None) %}
 
-                        {% set active_workshop = namespace(found=None) %}
+                    {% for transfer in equipment.workshop_transfers %}
 
-                        {% for transfer in equipment.workshop_transfers %}
+                        {% if transfer.status == "في الورشة" %}
 
-                            {% if transfer.status == "في الورشة" %}
-
-                                {% set active_workshop.found = transfer %}
-
-                            {% endif %}
-
-                        {% endfor %}
-
-                        {% if active_workshop.found %}
-
-                            <span class="workshop">
-                                {{ active_workshop.found.workshop_name }}
-                            </span>
-
-                        {% else %}
-
-                            -
+                            {% set active_workshop.found = transfer %}
 
                         {% endif %}
+
+                    {% endfor %}
+
+                    {% if active_workshop.found %}
+
+                        <span class="workshop">
+                            {{ active_workshop.found.workshop_name }}
+                        </span>
 
                     {% else %}
 
@@ -196,28 +216,20 @@
 
                 <td>
 
-                    {% if equipment.workshop_transfers %}
+                    {% set active_document = namespace(value=None) %}
 
-                        {% set active_document = namespace(value=None) %}
+                    {% for transfer in equipment.workshop_transfers %}
 
-                        {% for transfer in equipment.workshop_transfers %}
+                        {% if transfer.status == "في الورشة" %}
 
-                            {% if transfer.status == "في الورشة" %}
+                            {% set active_document.value =
+                                transfer.dispatch_document %}
 
-                                {% set active_document.value =
-                                    transfer.dispatch_document %}
+                        {% endif %}
 
-                            {% endif %}
+                    {% endfor %}
 
-                        {% endfor %}
-
-                        {{ active_document.value or "-" }}
-
-                    {% else %}
-
-                        -
-
-                    {% endif %}
+                    {{ active_document.value or "-" }}
 
                 </td>
 
@@ -232,7 +244,9 @@
     {% else %}
 
         <div class="empty">
+
             لا توجد سيارات أو معدات مسجلة حاليًا.
+
         </div>
 
     {% endif %}

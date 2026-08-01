@@ -1,2 +1,6 @@
 SQLAlchemy
 PySide6
+FastAPI
+uvicorn[standard]
+Jinja2
+python-multipart

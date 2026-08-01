@@ -51,6 +51,7 @@
         border: 1px solid #ccc;
         border-radius: 7px;
         font-size: 15px;
+        background: white;
     }
 
     .buttons {
@@ -71,6 +72,10 @@
     .save {
         background: #198754;
         color: white;
+    }
+
+    .save:hover {
+        background: #157347;
     }
 
     .cancel {
@@ -118,29 +123,49 @@
         <div class="form-grid">
 
 
+            <!-- نوع العتاد -->
+
             <div class="field">
 
-                <label>
+                <label for="equipment_type_id">
                     نوع العتاد *
                 </label>
 
-                <input
-                    type="number"
+                <select
+                    id="equipment_type_id"
                     name="equipment_type_id"
                     required
-                    placeholder="رقم نوع العتاد"
                 >
+
+                    <option value="">
+                        اختر نوع العتاد
+                    </option>
+
+                    {% for equipment_type in equipment_types %}
+
+                        <option
+                            value="{{ equipment_type.id }}"
+                        >
+                            {{ equipment_type.name }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
 
             </div>
 
 
+            <!-- رقم التسجيل -->
+
             <div class="field">
 
-                <label>
+                <label for="registration_number">
                     رقم التسجيل *
                 </label>
 
                 <input
+                    id="registration_number"
                     type="text"
                     name="registration_number"
                     required
@@ -149,13 +174,16 @@
             </div>
 
 
+            <!-- رقم الهيكل -->
+
             <div class="field">
 
-                <label>
+                <label for="chassis_number">
                     رقم الهيكل
                 </label>
 
                 <input
+                    id="chassis_number"
                     type="text"
                     name="chassis_number"
                 >
@@ -163,13 +191,16 @@
             </div>
 
 
+            <!-- الطراز -->
+
             <div class="field">
 
-                <label>
+                <label for="model">
                     الطراز
                 </label>
 
                 <input
+                    id="model"
                     type="text"
                     name="model"
                 >
@@ -177,13 +208,16 @@
             </div>
 
 
+            <!-- نوع الوقود -->
+
             <div class="field">
 
-                <label>
+                <label for="fuel_type">
                     نوع الوقود
                 </label>
 
                 <input
+                    id="fuel_type"
                     type="text"
                     name="fuel_type"
                 >
@@ -191,13 +225,16 @@
             </div>
 
 
+            <!-- معدل الاستهلاك -->
+
             <div class="field">
 
-                <label>
+                <label for="fuel_consumption">
                     معدل الاستهلاك
                 </label>
 
                 <input
+                    id="fuel_consumption"
                     type="text"
                     name="fuel_consumption"
                     placeholder="مثال: 8.5"
@@ -206,13 +243,18 @@
             </div>
 
 
+            <!-- الحالة -->
+
             <div class="field">
 
-                <label>
+                <label for="status">
                     الحالة
                 </label>
 
-                <select name="status">
+                <select
+                    id="status"
+                    name="status"
+                >
 
                     <option value="متاحة">
                         متاحة
@@ -239,13 +281,16 @@
             </div>
 
 
+            <!-- المصلحة -->
+
             <div class="field">
 
-                <label>
+                <label for="department">
                     المصلحة
                 </label>
 
                 <input
+                    id="department"
                     type="text"
                     name="department"
                 >

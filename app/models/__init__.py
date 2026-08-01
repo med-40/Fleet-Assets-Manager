@@ -12,6 +12,7 @@ from app.models.setting import Setting
 
 from app.models.equipment_type import EquipmentType
 from app.models.equipment import Equipment
+from app.models.workshop_transfer import WorkshopTransfer
 from app.models.equipment_status import EquipmentStatus
 
 from app.models.driver import Driver

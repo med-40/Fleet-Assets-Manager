@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}
+أنواع العتاد - نظام تسيير الحضيرة
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+
+    .page-header h1 {
+        margin: 0;
+        font-size: 30px;
+    }
+
+    .page-header p {
+        margin-top: 8px;
+        color: #666;
+    }
+
+    .add-button {
+        display: inline-block;
+        padding: 11px 20px;
+        background: #198754;
+        color: white;
+        text-decoration: none;
+        border-radius: 7px;
+        font-weight: bold;
+    }
+
+    .add-button:hover {
+        background: #157347;
+    }
+
+    .message {
+        background: #d1e7dd;
+        color: #0f5132;
+        padding: 12px 15px;
+        border-radius: 7px;
+        margin-bottom: 20px;
+    }
+
+    .error {
+        background: #f8d7da;
+        color: #842029;
+        padding: 12px 15px;
+        border-radius: 7px;
+        margin-bottom: 20px;
+    }
+
+    .table-container {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        background: #f1f3f5;
+        font-weight: bold;
+    }
+
+    th,
+    td {
+        padding: 14px;
+        border-bottom: 1px solid #e5e5e5;
+        text-align: right;
+    }
+
+    tr:hover td {
+        background: #fafafa;
+    }
+
+    .delete-button {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 7px 13px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .delete-button:hover {
+        background: #bb2d3b;
+    }
+
+    .empty {
+        text-align: center;
+        padding: 50px;
+        color: #777;
+    }
+
+</style>
+
+
+<div class="page-header">
+
+    <div>
+
+        <h1>
+            أنواع العتاد
+        </h1>
+
+        <p>
+            إدارة وتصنيف أنواع السيارات والعتاد
+        </p>
+
+    </div>
+
+
+    <a
+        href="/equipment-types/new"
+        class="add-button"
+    >
+        + إضافة نوع
+    </a>
+
+</div>
+
+
+{% if message %}
+
+    <div class="message">
+        {{ message }}
+    </div>
+
+{% endif %}
+
+
+{% if error %}
+
+    <div class="error">
+        {{ error }}
+    </div>
+
+{% endif %}
+
+
+<div class="table-container">
+
+    {% if equipment_types %}
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>
+                    #
+                </th>
+
+                <th>
+                    نوع العتاد
+                </th>
+
+                <th>
+                    الوصف
+                </th>
+
+                <th>
+                    الإجراء
+                </th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+            {% for equipment_type in equipment_types %}
+
+            <tr>
+
+                <td>
+                    {{ equipment_type.id }}
+                </td>
+
+                <td>
+                    <strong>
+                        {{ equipment_type.name }}
+                    </strong>
+                </td>
+
+                <td>
+                    {{ equipment_type.description or "-" }}
+                </td>
+
+                <td>
+
+                    <form
+                        method="post"
+                        action="/equipment-types/{{ equipment_type.id }}/delete"
+                        onsubmit="return confirm('هل أنت متأكد من حذف نوع العتاد هذا؟');"
+                    >
+
+                        <button
+                            type="submit"
+                            class="delete-button"
+                        >
+                            حذف
+                        </button>
+
+                    </form>
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+    {% else %}
+
+        <div class="empty">
+
+            لا توجد أنواع عتاد مسجلة حاليًا.
+
+            <br><br>
+
+            يمكنك إضافة أول نوع من خلال زر
+            <strong>+ إضافة نوع</strong>.
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

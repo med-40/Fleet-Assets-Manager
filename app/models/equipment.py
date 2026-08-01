@@ -2,6 +2,7 @@ from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import Float
 from sqlalchemy import Date
 
 from sqlalchemy.orm import relationship
@@ -24,40 +25,73 @@ class Equipment(Base):
         nullable=False
     )
 
-    registration_number = Column(
+    # وثيقة الاستلام
+    receipt_document = Column(
         String(100),
-        unique=True
+        unique=True,
+        nullable=False
     )
 
-    manufacturer = Column(
-        String(100)
-    )
-
-    model = Column(
-        String(100)
-    )
-
-    year = Column(
-        Integer
-    )
-
-    chassis_number = Column(
-        String(150)
-    )
-
-    engine_number = Column(
-        String(150)
-    )
-
+    # تاريخ الاقتناء
     acquisition_date = Column(
         Date
     )
 
-    status = Column(
-        String(50),
-        default="Active"
+    # رقم التسجيل
+    registration_number = Column(
+        String(100),
+        unique=True,
+        nullable=False
     )
 
+    # العلامة
+    manufacturer = Column(
+        String(100)
+    )
+
+    # الطراز
+    model = Column(
+        String(100)
+    )
+
+    # رقم الهيكل
+    chassis_number = Column(
+        String(150),
+        unique=True
+    )
+
+    # نوع الوقود
+    fuel_type = Column(
+        String(50)
+    )
+
+    # معدل الاستهلاك
+    fuel_consumption = Column(
+        Float
+    )
+
+    # الحالة
+    status = Column(
+        String(50),
+        default="متاحة"
+    )
+
+    # تاريخ آخر مراجعة
+    last_review_date = Column(
+        Date
+    )
+
+    # المصلحة
+    department = Column(
+        String(150)
+    )
+
+    # الملاحظات
+    notes = Column(
+        String(500)
+    )
+
+    # نوع العتاد
     equipment_type = relationship(
         "EquipmentType"
     )

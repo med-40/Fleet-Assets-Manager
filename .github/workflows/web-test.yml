@@ -34,8 +34,23 @@ jobs:
 
       - name: Start FastAPI server
         run: |
-          nohup python run_web.py > web_server.log 2>&1 &
+          python run_web.py > web_server.log 2>&1 &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID"
           sleep 5
+
+          if ! kill -0 $SERVER_PID 2>/dev/null; then
+            echo "FastAPI server stopped unexpectedly."
+            cat web_server.log || true
+            exit 1
+          fi
+
+      - name: Show server log
+        if: always()
+        run: |
+          echo "===== FastAPI SERVER LOG ====="
+          cat web_server.log || true
+          echo "===== END SERVER LOG ====="
 
       - name: Test Web Page
         run: |
@@ -49,7 +64,8 @@ jobs:
         run: |
           python -c "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:8000/dashboard'); content = response.read().decode(); assert 'لوحة التحكم' in content; print('Dashboard OK')"
 
-      - name: Show server log if needed
+      - name: Final server log
         if: failure()
         run: |
-          cat web_server.log
+          echo "===== FINAL SERVER LOG ====="
+          cat web_server.log || true

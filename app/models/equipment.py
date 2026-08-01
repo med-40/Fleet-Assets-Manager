@@ -95,3 +95,10 @@ class Equipment(Base):
     equipment_type = relationship(
         "EquipmentType"
     )
+
+    # سجل إرسال العتاد إلى الورش الخارجية
+    workshop_transfers = relationship(
+        "WorkshopTransfer",
+        back_populates="equipment",
+        cascade="all, delete-orphan"
+    )

@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from app.database.session import SessionLocal
 from app.models.equipment import Equipment
+from app.models.equipment_type import EquipmentType
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,6 +28,7 @@ app = FastAPI(
 
 @app.get("/")
 def home():
+
     return FileResponse(INDEX_FILE)
 
 
@@ -36,6 +38,7 @@ def dashboard(request: Request):
     db = None
 
     try:
+
         db = SessionLocal()
 
         vehicles = db.execute(
@@ -129,25 +132,51 @@ def equipment_page(request: Request):
 @app.get("/equipment/new")
 def new_equipment_page(request: Request):
 
-    return templates.TemplateResponse(
-        request=request,
-        name="pages/equipment_form.html",
-        context={
-            "error": None
-        }
-    )
+    db = None
+
+    try:
+
+        db = SessionLocal()
+
+        equipment_types = (
+            db.query(EquipmentType)
+            .order_by(EquipmentType.name)
+            .all()
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="pages/equipment_form.html",
+            context={
+                "equipment_types": equipment_types,
+                "error": None
+            }
+        )
+
+    finally:
+
+        if db is not None:
+            db.close()
 
 
 @app.post("/equipment/new")
 def create_equipment(
     request: Request,
+
     equipment_type_id: int = Form(...),
+
     registration_number: str = Form(...),
+
     chassis_number: str = Form(""),
+
     model: str = Form(""),
+
     fuel_type: str = Form(""),
+
     fuel_consumption: str = Form(""),
+
     status: str = Form("متاحة"),
+
     department: str = Form(""),
 ):
 
@@ -158,18 +187,65 @@ def create_equipment(
         db = SessionLocal()
 
         registration_number = registration_number.strip()
+
         chassis_number = chassis_number.strip()
 
-        if not registration_number:
+        model = model.strip()
+
+        fuel_type = fuel_type.strip()
+
+        department = department.strip()
+
+
+        # التأكد من وجود نوع العتاد
+
+        equipment_type = (
+            db.query(EquipmentType)
+            .filter(
+                EquipmentType.id == equipment_type_id
+            )
+            .first()
+        )
+
+        if equipment_type is None:
+
+            equipment_types = (
+                db.query(EquipmentType)
+                .order_by(EquipmentType.name)
+                .all()
+            )
 
             return templates.TemplateResponse(
                 request=request,
                 name="pages/equipment_form.html",
                 context={
+                    "equipment_types": equipment_types,
+                    "error": "نوع العتاد غير موجود."
+                },
+                status_code=400
+            )
+
+
+        # التأكد من رقم التسجيل
+
+        if not registration_number:
+
+            equipment_types = (
+                db.query(EquipmentType)
+                .order_by(EquipmentType.name)
+                .all()
+            )
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/equipment_form.html",
+                context={
+                    "equipment_types": equipment_types,
                     "error": "رقم التسجيل مطلوب."
                 },
                 status_code=400
             )
+
 
         existing = (
             db.query(Equipment)
@@ -182,14 +258,24 @@ def create_equipment(
 
         if existing:
 
+            equipment_types = (
+                db.query(EquipmentType)
+                .order_by(EquipmentType.name)
+                .all()
+            )
+
             return templates.TemplateResponse(
                 request=request,
                 name="pages/equipment_form.html",
                 context={
+                    "equipment_types": equipment_types,
                     "error": "رقم التسجيل موجود مسبقًا."
                 },
                 status_code=400
             )
+
+
+        # تحويل معدل الاستهلاك إلى رقم
 
         consumption = None
 
@@ -203,14 +289,22 @@ def create_equipment(
 
             except ValueError:
 
+                equipment_types = (
+                    db.query(EquipmentType)
+                    .order_by(EquipmentType.name)
+                    .all()
+                )
+
                 return templates.TemplateResponse(
                     request=request,
                     name="pages/equipment_form.html",
                     context={
+                        "equipment_types": equipment_types,
                         "error": "معدل الاستهلاك يجب أن يكون رقمًا."
                     },
                     status_code=400
                 )
+
 
         equipment = Equipment(
 
@@ -222,26 +316,29 @@ def create_equipment(
 
             chassis_number=chassis_number or None,
 
-            model=model.strip() or None,
+            model=model or None,
 
-            fuel_type=fuel_type.strip() or None,
+            fuel_type=fuel_type or None,
 
             fuel_consumption=consumption,
 
             status=status.strip() or "متاحة",
 
-            department=department.strip() or None
+            department=department or None
 
         )
+
 
         db.add(equipment)
 
         db.commit()
 
+
         return RedirectResponse(
             url="/equipment",
             status_code=303
         )
+
 
     except Exception:
 
@@ -249,6 +346,7 @@ def create_equipment(
             db.rollback()
 
         raise
+
 
     finally:
 

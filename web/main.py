@@ -103,6 +103,7 @@ def equipment_page(request: Request):
     db = None
 
     try:
+
         db = SessionLocal()
 
         equipment_list = (
@@ -195,6 +196,7 @@ def create_equipment(
         if fuel_consumption.strip():
 
             try:
+
                 consumption = float(
                     fuel_consumption.replace(",", ".")
                 )

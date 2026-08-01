@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from ui.dashboard import DashboardPage
+from ui.vehicles import VehiclesPage
 
 
 class FleetAssetsManager(QMainWindow):
@@ -25,7 +26,7 @@ class FleetAssetsManager(QMainWindow):
 
         self.setLayoutDirection(Qt.RightToLeft)
 
-        # الصفحة الرئيسية
+        # النافذة الرئيسية
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
@@ -53,6 +54,7 @@ class FleetAssetsManager(QMainWindow):
 
         sidebar_layout.addWidget(logo)
 
+        # أزرار القائمة
         self.dashboard_button = self.create_menu_button("لوحة التحكم")
         self.vehicles_button = self.create_menu_button("السيارات")
         self.drivers_button = self.create_menu_button("السائقون")
@@ -87,22 +89,86 @@ class FleetAssetsManager(QMainWindow):
         # منطقة الصفحات
         self.pages = QStackedWidget()
 
+        # الصفحة 0: Dashboard
         self.dashboard_page = DashboardPage()
         self.pages.addWidget(self.dashboard_page)
 
-        # الصفحة المؤقتة لبقية الأقسام
-        self.placeholder_page = self.create_placeholder_page(
-            "السيارات"
-        )
-        self.pages.addWidget(self.placeholder_page)
+        # الصفحة 1: السيارات
+        self.vehicles_page = VehiclesPage()
+        self.pages.addWidget(self.vehicles_page)
 
-        # الربط
+        # صفحات مؤقتة للأقسام الأخرى
+        self.pages.addWidget(
+            self.create_placeholder_page("السائقون")
+        )
+        self.pages.addWidget(
+            self.create_placeholder_page("المهمات")
+        )
+        self.pages.addWidget(
+            self.create_placeholder_page("الوقود")
+        )
+        self.pages.addWidget(
+            self.create_placeholder_page("الصيانة")
+        )
+        self.pages.addWidget(
+            self.create_placeholder_page("الأعطال")
+        )
+        self.pages.addWidget(
+            self.create_placeholder_page("البطاريات")
+        )
+        self.pages.addWidget(
+            self.create_placeholder_page("الإطارات")
+        )
+        self.pages.addWidget(
+            self.create_placeholder_page("التقارير")
+        )
+        self.pages.addWidget(
+            self.create_placeholder_page("الإعدادات")
+        )
+
+        # ربط أزرار القائمة بالصفحات
         self.dashboard_button.clicked.connect(
             lambda: self.pages.setCurrentIndex(0)
         )
 
         self.vehicles_button.clicked.connect(
             lambda: self.pages.setCurrentIndex(1)
+        )
+
+        self.drivers_button.clicked.connect(
+            lambda: self.pages.setCurrentIndex(2)
+        )
+
+        self.missions_button.clicked.connect(
+            lambda: self.pages.setCurrentIndex(3)
+        )
+
+        self.fuel_button.clicked.connect(
+            lambda: self.pages.setCurrentIndex(4)
+        )
+
+        self.maintenance_button.clicked.connect(
+            lambda: self.pages.setCurrentIndex(5)
+        )
+
+        self.faults_button.clicked.connect(
+            lambda: self.pages.setCurrentIndex(6)
+        )
+
+        self.batteries_button.clicked.connect(
+            lambda: self.pages.setCurrentIndex(7)
+        )
+
+        self.tires_button.clicked.connect(
+            lambda: self.pages.setCurrentIndex(8)
+        )
+
+        self.reports_button.clicked.connect(
+            lambda: self.pages.setCurrentIndex(9)
+        )
+
+        self.settings_button.clicked.connect(
+            lambda: self.pages.setCurrentIndex(10)
         )
 
         # التخطيط الرئيسي

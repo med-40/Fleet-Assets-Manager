@@ -24,6 +24,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Create database
+        run: |
+          python create_database.py
+
       - name: Check FastAPI application
         run: |
           python -c "from web.main import app; print(app.title)"

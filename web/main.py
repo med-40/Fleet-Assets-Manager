@@ -14,19 +14,21 @@ app = FastAPI(
 @app.get("/")
 def home():
     return {
-        "message": "Fleet-Assets-Manager Web Server يعمل بنجاح"
+        "application": "Fleet Assets Manager",
+        "status": "running",
+        "message": "نظام تسيير الحضيرة يعمل بنجاح"
     }
 
 
 @app.get("/health")
 def health_check():
 
+    db = None
+
     try:
         db = SessionLocal()
 
         db.execute(text("SELECT 1"))
-
-        db.close()
 
         return {
             "status": "ok",
@@ -40,3 +42,8 @@ def health_check():
             "database": "disconnected",
             "message": str(error)
         }
+
+    finally:
+
+        if db is not None:
+            db.close()

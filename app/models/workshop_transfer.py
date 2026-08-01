@@ -52,7 +52,7 @@ class WorkshopTransfer(Base):
         Date
     )
 
-    # سبب إرسال العتاد إلى الورشة
+    # سبب إرسال العتاد
     reason = Column(
         String(500)
     )
@@ -70,5 +70,6 @@ class WorkshopTransfer(Base):
     )
 
     equipment = relationship(
-        "Equipment"
+        "Equipment",
+        back_populates="workshop_transfers"
     )

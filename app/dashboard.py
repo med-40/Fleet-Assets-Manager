@@ -7,6 +7,8 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 
+from database import get_dashboard_counts
+
 
 class Dashboard(QWidget):
 
@@ -19,7 +21,6 @@ class Dashboard(QWidget):
         main_layout.setContentsMargins(30, 30, 30, 30)
         main_layout.setSpacing(20)
 
-        # عنوان Dashboard
         title = QLabel("لوحة التحكم")
         title.setAlignment(Qt.AlignRight)
         title.setStyleSheet("""
@@ -40,19 +41,21 @@ class Dashboard(QWidget):
         main_layout.addWidget(title)
         main_layout.addWidget(subtitle)
 
-        # شبكة البطاقات
         cards_layout = QGridLayout()
         cards_layout.setSpacing(18)
 
+        # قراءة البيانات الحقيقية من قاعدة البيانات
+        counts = get_dashboard_counts()
+
         cards = [
-            ("🚗", "السيارات والعتاد", "0"),
-            ("🚙", "السيارات في مهمة", "0"),
-            ("🔧", "الصيانة المستحقة", "0"),
-            ("⛽", "استهلاك الوقود", "0"),
-            ("🪪", "رخص السير القريبة من الانتهاء", "0"),
-            ("🛠️", "الأعطال والإصلاحات", "0"),
-            ("🔋", "البطاريات", "0"),
-            ("🛞", "الإطارات", "0"),
+            ("🚗", "السيارات والعتاد", counts["vehicles"]),
+            ("🚙", "السيارات في مهمة", counts["active_missions"]),
+            ("🔧", "الصيانة المستحقة", counts["due_maintenance"]),
+            ("⛽", "استهلاك الوقود هذا الشهر", counts["monthly_fuel"]),
+            ("🪪", "رخص السير القريبة من الانتهاء", 0),
+            ("🛠️", "الأعطال والإصلاحات المفتوحة", counts["open_faults"]),
+            ("🔋", "البطاريات", 0),
+            ("🛞", "الإطارات", 0),
         ]
 
         for index, (icon, name, value) in enumerate(cards):
@@ -73,7 +76,6 @@ class Dashboard(QWidget):
 
         card = QFrame()
         card.setFrameShape(QFrame.StyledPanel)
-
         card.setMinimumHeight(150)
 
         card.setStyleSheet("""
@@ -99,7 +101,7 @@ class Dashboard(QWidget):
             font-size: 30px;
         """)
 
-        name_label = QLabel(name)
+        name_label = QLabel(str(name))
         name_label.setAlignment(Qt.AlignCenter)
         name_label.setWordWrap(True)
         name_label.setStyleSheet("""
@@ -107,7 +109,7 @@ class Dashboard(QWidget):
             font-weight: bold;
         """)
 
-        value_label = QLabel(value)
+        value_label = QLabel(str(value))
         value_label.setAlignment(Qt.AlignCenter)
         value_label.setStyleSheet("""
             font-size: 28px;

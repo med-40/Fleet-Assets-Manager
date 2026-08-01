@@ -73,7 +73,8 @@ class Equipment(Base):
     # الحالة
     status = Column(
         String(50),
-        default="متاحة"
+        default="متاحة",
+        nullable=False
     )
 
     # تاريخ آخر مراجعة

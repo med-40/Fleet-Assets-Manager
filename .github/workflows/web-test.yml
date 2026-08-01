@@ -33,7 +33,11 @@ jobs:
           nohup python run_web.py > web_server.log 2>&1 &
           sleep 5
 
-      - name: Test HTTP endpoint
+      - name: Test Web Page
+        run: |
+          python -c "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:8000/'); content = response.read().decode(); assert 'نظام تسيير الحضيرة' in content; print('Web page OK')"
+
+      - name: Test Database Endpoint
         run: |
           python -c "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:8000/health'); print(response.read().decode())"
 

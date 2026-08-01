@@ -24,6 +24,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Check Web Application
+      - name: Check FastAPI application
         run: |
           python -c "from web.main import app; print(app.title)"
+
+      - name: Start FastAPI server
+        run: |
+          nohup python run_web.py > web_server.log 2>&1 &
+          sleep 5
+
+      - name: Test HTTP endpoint
+        run: |
+          python -c "import urllib.request; response = urllib.request.urlopen('http://127.0.0.1:8000/health'); print(response.read().decode())"
+
+      - name: Show server log if needed
+        if: failure()
+        run: |
+          cat web_server.log

@@ -15,33 +15,40 @@ class Driver(Base):
         primary_key=True
     )
 
+    # الاسم
     first_name = Column(
         String(100),
         nullable=False
     )
 
+    # اللقب
     last_name = Column(
         String(100),
         nullable=False
     )
 
+    # الرتبة
     rank = Column(
         String(100)
     )
 
+    # رقم الهاتف
     phone = Column(
         String(50)
     )
 
+    # رقم رخصة السياقة
     license_number = Column(
         String(100),
         unique=True
     )
 
+    # تاريخ انتهاء رخصة السياقة
     license_expiry_date = Column(
         Date
     )
 
+    # الحالة
     status = Column(
         String(50),
         default="Active"

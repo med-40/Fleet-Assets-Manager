@@ -40,6 +40,7 @@ jobs:
           nohup python -m uvicorn web.main:app \
             --host 127.0.0.1 \
             --port 8000 \
+            --log-level debug \
             > web_server.log 2>&1 &
 
           echo $! > web_server.pid
@@ -53,9 +54,7 @@ jobs:
           url = "http://127.0.0.1:8000/health"
 
           for attempt in range(30):
-
               try:
-
                   response = urllib.request.urlopen(
                       url,
                       timeout=2
@@ -71,17 +70,25 @@ jobs:
                   break
 
               except Exception as error:
-
                   print(
                       f"Waiting for FastAPI... "
                       f"attempt {attempt + 1}/30"
                   )
-
                   print(error)
-
                   time.sleep(1)
 
           else:
+              print("===== FASTAPI LOG =====")
+
+              try:
+                  with open(
+                      "web_server.log",
+                      "r",
+                      encoding="utf-8"
+                  ) as file:
+                      print(file.read())
+              except Exception as error:
+                  print(error)
 
               raise RuntimeError(
                   "FastAPI server did not start"
@@ -97,27 +104,38 @@ jobs:
 
           print("Opening:", url)
 
-          response = urllib.request.urlopen(
-              url,
-              timeout=10
-          )
+          try:
 
-          content = response.read().decode("utf-8")
-
-          print("Dashboard HTTP status:")
-          print(response.status)
-
-          print("===== DASHBOARD RESPONSE =====")
-          print(content)
-          print("===== END DASHBOARD RESPONSE =====")
-
-          if response.status != 200:
-              raise RuntimeError(
-                  "Dashboard returned an invalid HTTP status"
+              response = urllib.request.urlopen(
+                  url,
+                  timeout=10
               )
 
-          print("Dashboard HTTP test OK")
-          PY
+              content = response.read().decode("utf-8")
+
+              print("Dashboard HTTP status:")
+              print(response.status)
+
+              print(content)
+
+          except Exception as error:
+
+              print("Dashboard ERROR:")
+              print(error)
+
+              print("===== FASTAPI LOG =====")
+
+              try:
+                  with open(
+                      "web_server.log",
+                      "r",
+                      encoding="utf-8"
+                  ) as file:
+                      print(file.read())
+              except Exception as log_error:
+                  print(log_error)
+
+              raise
 
       - name: Test Equipment Types
         run: |
@@ -128,27 +146,47 @@ jobs:
 
           print("Opening:", url)
 
-          response = urllib.request.urlopen(
-              url,
-              timeout=10
-          )
+          try:
 
-          content = response.read().decode("utf-8")
-
-          print("Equipment Types HTTP status:")
-          print(response.status)
-
-          print("===== EQUIPMENT TYPES RESPONSE =====")
-          print(content)
-          print("===== END EQUIPMENT TYPES RESPONSE =====")
-
-          if response.status != 200:
-              raise RuntimeError(
-                  "Equipment Types returned an invalid HTTP status"
+              response = urllib.request.urlopen(
+                  url,
+                  timeout=10
               )
 
-          print("Equipment Types HTTP test OK")
-          PY
+              content = response.read().decode("utf-8")
+
+              print("Equipment Types HTTP status:")
+              print(response.status)
+
+              print("===== EQUIPMENT TYPES RESPONSE =====")
+              print(content)
+              print("===== END RESPONSE =====")
+
+          except Exception as error:
+
+              print("Equipment Types ERROR:")
+              print(error)
+
+              print("")
+              print("====================================")
+              print("===== FASTAPI SERVER LOG =====")
+              print("====================================")
+
+              try:
+                  with open(
+                      "web_server.log",
+                      "r",
+                      encoding="utf-8"
+                  ) as file:
+                      print(file.read())
+              except Exception as log_error:
+                  print(log_error)
+
+              print("====================================")
+              print("===== END FASTAPI SERVER LOG =====")
+              print("====================================")
+
+              raise
 
       - name: Show FastAPI log
         if: always()

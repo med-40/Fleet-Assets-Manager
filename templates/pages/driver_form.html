@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}
+إضافة سائق - نظام تسيير الحضيرة
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+    .form-header {
+        margin-bottom: 25px;
+    }
+
+    .form-header h1 {
+        margin: 0;
+        font-size: 30px;
+    }
+
+    .form-header p {
+        color: #666;
+    }
+
+    .form-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 25px;
+        max-width: 900px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+    }
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .field label {
+        font-weight: bold;
+    }
+
+    .field input,
+    .field select {
+        padding: 11px;
+        border: 1px solid #ccc;
+        border-radius: 7px;
+        font-size: 15px;
+        background: white;
+        box-sizing: border-box;
+    }
+
+    .buttons {
+        margin-top: 25px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .button {
+        padding: 11px 22px;
+        border: none;
+        border-radius: 7px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 15px;
+    }
+
+    .save {
+        background: #198754;
+        color: white;
+    }
+
+    .save:hover {
+        background: #157347;
+    }
+
+    .cancel {
+        background: #eeeeee;
+        color: #333;
+    }
+
+    .error {
+        background: #ffe5e5;
+        color: #a00;
+        padding: 12px;
+        border-radius: 7px;
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 700px) {
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+    }
+
+</style>
+
+
+<div class="form-header">
+
+    <h1>
+        إضافة سائق
+    </h1>
+
+    <p>
+        إدخال سائق جديد إلى قاعدة البيانات
+    </p>
+
+</div>
+
+
+<div class="form-card">
+
+    {% if error %}
+
+        <div class="error">
+            {{ error }}
+        </div>
+
+    {% endif %}
+
+
+    <form method="post" action="/drivers/new">
+
+        <div class="form-grid">
+
+
+            <!-- الاسم -->
+
+            <div class="field">
+
+                <label for="first_name">
+                    الاسم *
+                </label>
+
+                <input
+                    id="first_name"
+                    type="text"
+                    name="first_name"
+                    required
+                >
+
+            </div>
+
+
+            <!-- اللقب -->
+
+            <div class="field">
+
+                <label for="last_name">
+                    اللقب *
+                </label>
+
+                <input
+                    id="last_name"
+                    type="text"
+                    name="last_name"
+                    required
+                >
+
+            </div>
+
+
+            <!-- الرتبة -->
+
+            <div class="field">
+
+                <label for="rank">
+                    الرتبة
+                </label>
+
+                <input
+                    id="rank"
+                    type="text"
+                    name="rank"
+                    placeholder="مثال: سائق رئيسي"
+                >
+
+            </div>
+
+
+            <!-- الهاتف -->
+
+            <div class="field">
+
+                <label for="phone">
+                    رقم الهاتف
+                </label>
+
+                <input
+                    id="phone"
+                    type="text"
+                    name="phone"
+                >
+
+            </div>
+
+
+            <!-- رقم الرخصة -->
+
+            <div class="field">
+
+                <label for="license_number">
+                    رقم رخصة السياقة
+                </label>
+
+                <input
+                    id="license_number"
+                    type="text"
+                    name="license_number"
+                >
+
+            </div>
+
+
+            <!-- تاريخ انتهاء الرخصة -->
+
+            <div class="field">
+
+                <label for="license_expiry_date">
+                    تاريخ انتهاء رخصة السياقة
+                </label>
+
+                <input
+                    id="license_expiry_date"
+                    type="date"
+                    name="license_expiry_date"
+                >
+
+            </div>
+
+
+            <!-- الحالة -->
+
+            <div class="field">
+
+                <label for="status">
+                    الحالة
+                </label>
+
+                <select
+                    id="status"
+                    name="status"
+                >
+
+                    <option value="Active">
+                        نشط
+                    </option>
+
+                    <option value="Inactive">
+                        غير نشط
+                    </option>
+
+                </select>
+
+            </div>
+
+
+        </div>
+
+
+        <div class="buttons">
+
+            <button
+                type="submit"
+                class="button save"
+            >
+                حفظ السائق
+            </button>
+
+
+            <a
+                href="/drivers"
+                class="button cancel"
+            >
+                إلغاء
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

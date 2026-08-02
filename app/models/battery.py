@@ -1,52 +1,80 @@
 from sqlalchemy import Column
 from sqlalchemy import Date
-from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 
 from app.database.base import Base
 
 
-class Battery(Base):
+class Driver(Base):
 
-    __tablename__ = "batteries"
+    __tablename__ = "drivers"
+
+    # =====================================================
+    # المعرف
+    # =====================================================
 
     id = Column(
         Integer,
         primary_key=True
     )
 
-    part_id = Column(
-        Integer,
-        ForeignKey("parts.id")
+    # =====================================================
+    # الاسم
+    # =====================================================
+
+    first_name = Column(
+        String(100),
+        nullable=False
     )
 
-    equipment_id = Column(
-        Integer,
-        ForeignKey("equipment.id")
+    # =====================================================
+    # اللقب
+    # =====================================================
+
+    last_name = Column(
+        String(100),
+        nullable=False
     )
 
-    serial_number = Column(
+    # =====================================================
+    # الرتبة
+    # =====================================================
+
+    rank = Column(
         String(100)
     )
 
-    installation_date = Column(
+    # =====================================================
+    # رقم الهاتف
+    # =====================================================
+
+    phone = Column(
+        String(50)
+    )
+
+    # =====================================================
+    # رقم رخصة السياقة
+    # =====================================================
+
+    license_number = Column(
+        String(100),
+        unique=True
+    )
+
+    # =====================================================
+    # تاريخ انتهاء رخصة السياقة
+    # =====================================================
+
+    license_expiry_date = Column(
         Date
     )
 
-    replacement_date = Column(
-        Date
-    )
-
-    installation_mileage = Column(
-        Integer
-    )
-
-    replacement_mileage = Column(
-        Integer
-    )
+    # =====================================================
+    # الحالة
+    # =====================================================
 
     status = Column(
         String(50),
-        default="Installed"
+        default="Active"
     )

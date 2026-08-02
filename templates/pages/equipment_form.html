@@ -46,12 +46,23 @@
     }
 
     .field input,
-    .field select {
+    .field select,
+    .field textarea {
         padding: 11px;
         border: 1px solid #ccc;
         border-radius: 7px;
         font-size: 15px;
         background: white;
+        font-family: Arial, sans-serif;
+    }
+
+    .field textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .full-width {
+        grid-column: 1 / -1;
     }
 
     .buttons {
@@ -91,6 +102,18 @@
         margin-bottom: 20px;
     }
 
+    @media (max-width: 700px) {
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .full-width {
+            grid-column: auto;
+        }
+
+    }
+
 </style>
 
 
@@ -123,7 +146,27 @@
         <div class="form-grid">
 
 
-            <!-- نوع العتاد -->
+            <!-- 1. وثيقة الاستلام -->
+
+            <div class="field">
+
+                <label for="receipt_document">
+                    وثيقة الاستلام *
+                </label>
+
+                <input
+                    id="receipt_document"
+                    type="text"
+                    name="receipt_document"
+                    required
+                    maxlength="100"
+                    placeholder="رقم أو مرجع وثيقة الاستلام"
+                >
+
+            </div>
+
+
+            <!-- 2. نوع العتاد -->
 
             <div class="field">
 
@@ -156,7 +199,25 @@
             </div>
 
 
-            <!-- رقم التسجيل -->
+            <!-- 3. الطراز -->
+
+            <div class="field">
+
+                <label for="model">
+                    الطراز
+                </label>
+
+                <input
+                    id="model"
+                    type="text"
+                    name="model"
+                    maxlength="100"
+                >
+
+            </div>
+
+
+            <!-- 4. رقم التسجيل -->
 
             <div class="field">
 
@@ -169,12 +230,13 @@
                     type="text"
                     name="registration_number"
                     required
+                    maxlength="100"
                 >
 
             </div>
 
 
-            <!-- رقم الهيكل -->
+            <!-- 5. رقم الهيكل -->
 
             <div class="field">
 
@@ -186,64 +248,13 @@
                     id="chassis_number"
                     type="text"
                     name="chassis_number"
+                    maxlength="150"
                 >
 
             </div>
 
 
-            <!-- الطراز -->
-
-            <div class="field">
-
-                <label for="model">
-                    الطراز
-                </label>
-
-                <input
-                    id="model"
-                    type="text"
-                    name="model"
-                >
-
-            </div>
-
-
-            <!-- نوع الوقود -->
-
-            <div class="field">
-
-                <label for="fuel_type">
-                    نوع الوقود
-                </label>
-
-                <input
-                    id="fuel_type"
-                    type="text"
-                    name="fuel_type"
-                >
-
-            </div>
-
-
-            <!-- معدل الاستهلاك -->
-
-            <div class="field">
-
-                <label for="fuel_consumption">
-                    معدل الاستهلاك
-                </label>
-
-                <input
-                    id="fuel_consumption"
-                    type="text"
-                    name="fuel_consumption"
-                    placeholder="مثال: 8.5"
-                >
-
-            </div>
-
-
-            <!-- الحالة -->
+            <!-- 6. الحالة -->
 
             <div class="field">
 
@@ -281,7 +292,7 @@
             </div>
 
 
-            <!-- المصلحة -->
+            <!-- 7. المصلحة -->
 
             <div class="field">
 
@@ -293,7 +304,86 @@
                     id="department"
                     type="text"
                     name="department"
+                    maxlength="150"
                 >
+
+            </div>
+
+
+            <!-- 8. نوع الوقود -->
+
+            <div class="field">
+
+                <label for="fuel_type">
+                    نوع الوقود
+                </label>
+
+                <select
+                    id="fuel_type"
+                    name="fuel_type"
+                >
+
+                    <option value="">
+                        اختر نوع الوقود
+                    </option>
+
+                    <option value="مازوت">
+                        مازوت
+                    </option>
+
+                    <option value="بنزين">
+                        بنزين
+                    </option>
+
+                    <option value="غاز">
+                        غاز
+                    </option>
+
+                    <option value="كهرباء">
+                        كهرباء
+                    </option>
+
+                    <option value="هجين">
+                        هجين
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- 9. معدل الاستهلاك -->
+
+            <div class="field">
+
+                <label for="fuel_consumption">
+                    معدل الاستهلاك
+                </label>
+
+                <input
+                    id="fuel_consumption"
+                    type="text"
+                    name="fuel_consumption"
+                    placeholder="مثال: 8.5"
+                >
+
+            </div>
+
+
+            <!-- 10. الملاحظات -->
+
+            <div class="field full-width">
+
+                <label for="notes">
+                    الملاحظات
+                </label>
+
+                <textarea
+                    id="notes"
+                    name="notes"
+                    maxlength="500"
+                    placeholder="ملاحظات إضافية..."
+                ></textarea>
 
             </div>
 

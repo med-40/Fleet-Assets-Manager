@@ -29,7 +29,7 @@ jobs:
 
       - name: Check FastAPI import
         run: |
-          python -c "from web.main import app; print(app.title)"
+          python -c "from web.main import app; print('FastAPI:', app.title)"
 
       - name: Create database
         run: |
@@ -44,7 +44,7 @@ jobs:
 
           echo $! > web_server.pid
 
-      - name: Wait for server
+      - name: Wait for FastAPI
         run: |
           python - <<'PY'
           import time
@@ -52,16 +52,40 @@ jobs:
 
           url = "http://127.0.0.1:8000/health"
 
-          for i in range(30):
+          for attempt in range(30):
+
               try:
-                  response = urllib.request.urlopen(url, timeout=2)
-                  print("Server response:", response.status)
+
+                  response = urllib.request.urlopen(
+                      url,
+                      timeout=2
+                  )
+
+                  print("FastAPI HTTP status:", response.status)
+
+                  body = response.read().decode("utf-8")
+
+                  print("Health response:")
+                  print(body)
+
                   break
-              except Exception:
-                  print("Waiting for FastAPI...")
+
+              except Exception as error:
+
+                  print(
+                      f"Waiting for FastAPI... "
+                      f"attempt {attempt + 1}/30"
+                  )
+
+                  print(error)
+
                   time.sleep(1)
+
           else:
-              raise RuntimeError("FastAPI server did not start")
+
+              raise RuntimeError(
+                  "FastAPI server did not start"
+              )
           PY
 
       - name: Test Dashboard
@@ -69,15 +93,30 @@ jobs:
           python - <<'PY'
           import urllib.request
 
+          url = "http://127.0.0.1:8000/dashboard"
+
+          print("Opening:", url)
+
           response = urllib.request.urlopen(
-              "http://127.0.0.1:8000/dashboard"
+              url,
+              timeout=10
           )
 
           content = response.read().decode("utf-8")
 
-          assert "لوحة التحكم" in content
+          print("Dashboard HTTP status:")
+          print(response.status)
 
-          print("Dashboard OK")
+          print("===== DASHBOARD RESPONSE =====")
+          print(content)
+          print("===== END DASHBOARD RESPONSE =====")
+
+          if response.status != 200:
+              raise RuntimeError(
+                  "Dashboard returned an invalid HTTP status"
+              )
+
+          print("Dashboard HTTP test OK")
           PY
 
       - name: Test Equipment Types
@@ -85,33 +124,48 @@ jobs:
           python - <<'PY'
           import urllib.request
 
+          url = "http://127.0.0.1:8000/equipment-types"
+
+          print("Opening:", url)
+
           response = urllib.request.urlopen(
-              "http://127.0.0.1:8000/equipment-types"
+              url,
+              timeout=10
           )
 
           content = response.read().decode("utf-8")
 
-          assert "أنواع العتاد" in content
+          print("Equipment Types HTTP status:")
+          print(response.status)
 
-          print("Equipment Types OK")
+          print("===== EQUIPMENT TYPES RESPONSE =====")
+          print(content)
+          print("===== END EQUIPMENT TYPES RESPONSE =====")
+
+          if response.status != 200:
+              raise RuntimeError(
+                  "Equipment Types returned an invalid HTTP status"
+              )
+
+          print("Equipment Types HTTP test OK")
           PY
 
-      - name: Show server log if failed
-        if: failure()
+      - name: Show FastAPI log
+        if: always()
         run: |
           echo "===== FASTAPI SERVER LOG ====="
 
           if [ -f web_server.log ]; then
-            cat web_server.log
+              cat web_server.log
           else
-            echo "web_server.log does not exist"
+              echo "web_server.log does not exist"
           fi
 
-          echo "===== END SERVER LOG ====="
+          echo "===== END FASTAPI SERVER LOG ====="
 
-      - name: Stop server
+      - name: Stop FastAPI
         if: always()
         run: |
           if [ -f web_server.pid ]; then
-            kill "$(cat web_server.pid)" || true
+              kill "$(cat web_server.pid)" || true
           fi

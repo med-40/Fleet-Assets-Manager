@@ -74,14 +74,8 @@
         display: inline-block;
         padding: 5px 10px;
         border-radius: 6px;
-        background: #e8f5ee;
-        color: #198754;
+        background: #eeeeee;
         font-size: 13px;
-    }
-
-    .expired {
-        background: #ffe5e5;
-        color: #a00;
     }
 
     .empty {
@@ -130,7 +124,7 @@
                 <th>الاسم</th>
                 <th>اللقب</th>
                 <th>الرتبة</th>
-                <th>الهاتف</th>
+                <th>رقم الهاتف</th>
                 <th>رقم رخصة السياقة</th>
                 <th>تاريخ انتهاء الرخصة</th>
                 <th>الحالة</th>
@@ -167,15 +161,17 @@
                 </td>
 
                 <td>
-                    {{ driver.license_expiry_date or "-" }}
+                    {% if driver.license_expiry_date %}
+                        {{ driver.license_expiry_date }}
+                    {% else %}
+                        -
+                    {% endif %}
                 </td>
 
                 <td>
 
                     <span class="status">
-
-                        {{ driver.status or "Active" }}
-
+                        {{ driver.status or "-" }}
                     </span>
 
                 </td>

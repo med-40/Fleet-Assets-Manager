@@ -3,6 +3,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Float
+
 from sqlalchemy.orm import relationship
 
 from app.database.base import Base
@@ -78,4 +79,10 @@ class Equipment(Base):
     # العلاقة مع نوع العتاد
     equipment_type = relationship(
         "EquipmentType"
+    )
+
+    # التحويلات إلى الورشات الخارجية
+    workshop_transfers = relationship(
+        "WorkshopTransfer",
+        back_populates="equipment"
     )

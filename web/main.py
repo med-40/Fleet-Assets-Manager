@@ -457,4 +457,4 @@ def create_equipment(
         raise
 
 
-    finally
+finally:

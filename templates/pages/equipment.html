@@ -49,7 +49,7 @@
     table {
         width: 100%;
         border-collapse: collapse;
-        min-width: 1000px;
+        min-width: 1400px;
     }
 
     th {
@@ -126,14 +126,37 @@
 
             <tr>
 
+                <!-- 1 -->
+                <th>وثيقة الاستلام</th>
+
+                <!-- 2 -->
                 <th>نوع العتاد</th>
-                <th>رقم التسجيل</th>
-                <th>رقم الهيكل</th>
+
+                <!-- 3 -->
                 <th>الطراز</th>
-                <th>نوع الوقود</th>
-                <th>معدل الاستهلاك</th>
+
+                <!-- 4 -->
+                <th>رقم التسجيل</th>
+
+                <!-- 5 -->
+                <th>رقم الهيكل</th>
+
+                <!-- 6 -->
                 <th>الحالة</th>
+
+                <!-- 7 -->
                 <th>المصلحة</th>
+
+                <!-- 8 -->
+                <th>نوع الوقود</th>
+
+                <!-- 9 -->
+                <th>معدل الاستهلاك</th>
+
+                <!-- 10 -->
+                <th>الملاحظات</th>
+
+                <!-- معلومات الورشة -->
                 <th>الورشة الخارجية</th>
                 <th>وثيقة الإرسال</th>
 
@@ -148,43 +171,101 @@
 
             <tr>
 
+                <!-- وثيقة الاستلام -->
+
                 <td>
+                    {{ equipment.receipt_document or "-" }}
+                </td>
+
+
+                <!-- نوع العتاد -->
+
+                <td>
+
                     {% if equipment.equipment_type %}
+
                         {{ equipment.equipment_type.name }}
+
                     {% else %}
+
                         -
+
                     {% endif %}
+
                 </td>
 
-                <td>
-                    {{ equipment.registration_number }}
-                </td>
 
-                <td>
-                    {{ equipment.chassis_number or "-" }}
-                </td>
+                <!-- الطراز -->
 
                 <td>
                     {{ equipment.model or "-" }}
                 </td>
 
-                <td>
-                    {{ equipment.fuel_type or "-" }}
-                </td>
+
+                <!-- رقم التسجيل -->
 
                 <td>
-                    {{ equipment.fuel_consumption or "-" }}
+                    {{ equipment.registration_number }}
                 </td>
 
+
+                <!-- رقم الهيكل -->
+
                 <td>
+                    {{ equipment.chassis_number or "-" }}
+                </td>
+
+
+                <!-- الحالة -->
+
+                <td>
+
                     <span class="status">
                         {{ equipment.status or "-" }}
                     </span>
+
                 </td>
+
+
+                <!-- المصلحة -->
 
                 <td>
                     {{ equipment.department or "-" }}
                 </td>
+
+
+                <!-- نوع الوقود -->
+
+                <td>
+                    {{ equipment.fuel_type or "-" }}
+                </td>
+
+
+                <!-- معدل الاستهلاك -->
+
+                <td>
+
+                    {% if equipment.fuel_consumption is not none %}
+
+                        {{ equipment.fuel_consumption }}
+
+                    {% else %}
+
+                        -
+
+                    {% endif %}
+
+                </td>
+
+
+                <!-- الملاحظات -->
+
+                <td>
+                    {{ equipment.notes or "-" }}
+                </td>
+
+
+                <!-- الورشة الخارجية -->
 
                 <td>
 
@@ -200,6 +281,7 @@
 
                     {% endfor %}
 
+
                     {% if active_workshop.found %}
 
                         <span class="workshop">
@@ -213,6 +295,9 @@
                     {% endif %}
 
                 </td>
+
+
+                <!-- وثيقة الإرسال -->
 
                 <td>
 
@@ -228,6 +313,7 @@
                         {% endif %}
 
                     {% endfor %}
+
 
                     {{ active_document.value or "-" }}
 

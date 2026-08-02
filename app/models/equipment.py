@@ -3,8 +3,6 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Float
-from sqlalchemy import Date
-
 from sqlalchemy.orm import relationship
 
 from app.database.base import Base
@@ -19,12 +17,6 @@ class Equipment(Base):
         primary_key=True
     )
 
-    equipment_type_id = Column(
-        Integer,
-        ForeignKey("equipment_types.id"),
-        nullable=False
-    )
-
     # وثيقة الاستلام
     receipt_document = Column(
         String(100),
@@ -32,9 +24,16 @@ class Equipment(Base):
         nullable=False
     )
 
-    # تاريخ الاقتناء
-    acquisition_date = Column(
-        Date
+    # نوع العتاد
+    equipment_type_id = Column(
+        Integer,
+        ForeignKey("equipment_types.id"),
+        nullable=False
+    )
+
+    # الطراز
+    model = Column(
+        String(100)
     )
 
     # رقم التسجيل
@@ -44,20 +43,21 @@ class Equipment(Base):
         nullable=False
     )
 
-    # العلامة
-    manufacturer = Column(
-        String(100)
-    )
-
-    # الطراز
-    model = Column(
-        String(100)
-    )
-
     # رقم الهيكل
     chassis_number = Column(
         String(150),
         unique=True
+    )
+
+    # الحالة
+    status = Column(
+        String(50),
+        default="متاحة"
+    )
+
+    # المصلحة
+    department = Column(
+        String(150)
     )
 
     # نوع الوقود
@@ -70,36 +70,12 @@ class Equipment(Base):
         Float
     )
 
-    # الحالة
-    status = Column(
-        String(50),
-        default="متاحة",
-        nullable=False
-    )
-
-    # تاريخ آخر مراجعة
-    last_review_date = Column(
-        Date
-    )
-
-    # المصلحة
-    department = Column(
-        String(150)
-    )
-
     # الملاحظات
     notes = Column(
         String(500)
     )
 
-    # نوع العتاد
+    # العلاقة مع نوع العتاد
     equipment_type = relationship(
         "EquipmentType"
-    )
-
-    # سجل إرسال العتاد إلى الورش الخارجية
-    workshop_transfers = relationship(
-        "WorkshopTransfer",
-        back_populates="equipment",
-        cascade="all, delete-orphan"
     )

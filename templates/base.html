@@ -38,6 +38,7 @@
             width: 240px;
             background: #ffffff;
             border-left: 1px solid #ddd;
+
             padding: 20px 15px;
 
             position: fixed;
@@ -50,10 +51,14 @@
 
         .logo {
             text-align: center;
+
             font-size: 20px;
             font-weight: bold;
+
             padding: 15px 5px 25px;
+
             border-bottom: 1px solid #eee;
+
             margin-bottom: 15px;
         }
 
@@ -65,7 +70,9 @@
 
         .menu a {
             display: block;
+
             text-decoration: none;
+
             color: #333;
 
             padding: 12px 15px;
@@ -96,14 +103,19 @@
             min-height: 100vh;
         }
 
+        /* الشريط العلوي */
+
         .topbar {
             background: white;
+
             padding: 18px 30px;
 
             border-bottom: 1px solid #ddd;
 
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
         }
 
@@ -117,9 +129,13 @@
             color: #666;
         }
 
+        /* محتوى الصفحة */
+
         .page-content {
             padding: 30px;
         }
+
+        /* الهواتف والشاشات الصغيرة */
 
         @media (max-width: 800px) {
 
@@ -140,82 +156,175 @@
 
 </head>
 
+
 <body>
 
 <div class="app">
 
+
+    <!-- ================================= -->
+    <!-- القائمة الجانبية -->
+    <!-- ================================= -->
+
     <aside class="sidebar">
 
+
         <div class="logo">
+
             نظام تسيير الحضيرة
+
         </div>
+
 
         <nav class="menu">
 
+
+            <!-- لوحة التحكم -->
+
             <a href="/dashboard">
+
                 📊 لوحة التحكم
+
             </a>
 
-            <a href="/equipment" class="active">
+
+            <!-- السيارات والعتاد -->
+
+            <a href="/equipment">
+
                 🚗 السيارات والعتاد
+
             </a>
 
+
+            <!-- السائقون -->
+
             <a href="#">
+
                 👨‍✈️ السائقون
+
             </a>
 
+
+            <!-- المهمات -->
+
             <a href="#">
+
                 🛣️ المهمات
+
             </a>
 
+
+            <!-- الوقود -->
+
             <a href="#">
+
                 ⛽ الوقود
+
             </a>
 
+
+            <!-- الصيانة -->
+
             <a href="#">
+
                 🔧 الصيانة
+
             </a>
 
+
+            <!-- الأعطال والإصلاحات -->
+
             <a href="#">
+
                 🛠️ الأعطال والإصلاحات
+
             </a>
 
+
+            <!-- البطاريات -->
+
             <a href="#">
+
                 🔋 البطاريات
+
             </a>
 
+
+            <!-- الإطارات -->
+
             <a href="#">
+
                 🛞 الإطارات
+
             </a>
 
+
+            <!-- قطع الغيار -->
+
             <a href="#">
+
                 📦 قطع الغيار
+
             </a>
 
+
+            <!-- التقارير -->
+
             <a href="#">
+
                 📄 التقارير
+
             </a>
 
+
+            <!-- الإعدادات -->
+
             <a href="#">
+
                 ⚙️ الإعدادات
+
             </a>
+
+
+            <!-- أنواع العتاد -->
+
+            <a href="/equipment-types">
+
+                🏷️ أنواع العتاد
+
+            </a>
+
 
         </nav>
+
 
     </aside>
 
 
+    <!-- ================================= -->
+    <!-- المحتوى الرئيسي -->
+    <!-- ================================= -->
+
     <main class="content">
+
 
         <header class="topbar">
 
+
             <div class="topbar-title">
+
                 نظام تسيير الحضيرة
+
             </div>
 
+
             <div class="user-info">
+
                 المستخدم: مسؤول النظام
+
             </div>
+
 
         </header>
 
@@ -223,11 +332,14 @@
         <section class="page-content">
 
             {% block content %}
+
             {% endblock %}
 
         </section>
 
+
     </main>
+
 
 </div>
 

@@ -127,10 +127,6 @@
         background: #5c636a;
     }
 
-    .external-workshop {
-        display: none;
-    }
-
     @media (max-width: 700px) {
 
         .form-grid {
@@ -153,11 +149,11 @@
 <div class="page-header">
 
     <h1>
-        إضافة صيانة
+        إضافة صيانة داخلية
     </h1>
 
     <p>
-        تسجيل إرسال سيارة أو عتاد إلى الصيانة
+        تسجيل عملية صيانة أو إصلاح للعتاد داخل المؤسسة
     </p>
 
 </div>
@@ -217,33 +213,52 @@
                 </select>
 
                 <div class="help-text">
-                    تظهر هنا السيارات والعتاد المتاح لإرساله إلى الصيانة.
+                    اختر العتاد الذي ستتم صيانته داخل المؤسسة.
                 </div>
 
             </div>
 
 
-            <!-- نوع الورشة -->
+            <!-- نوع عملية الصيانة -->
 
-            <div class="form-group">
+            <div class="form-group full">
 
-                <label for="workshop_type">
-                    نوع الورشة
+                <label for="maintenance_type">
+                    نوع عملية الصيانة
                 </label>
 
                 <select
-                    id="workshop_type"
-                    name="workshop_type"
+                    id="maintenance_type"
+                    name="maintenance_type"
                     required
-                    onchange="toggleExternalWorkshop()"
                 >
 
-                    <option value="داخل المؤسسة">
-                        داخل المؤسسة
+                    <option value="">
+                        -- اختر نوع الصيانة --
                     </option>
 
-                    <option value="خارج المؤسسة">
-                        خارج المؤسسة
+                    <option value="إصلاح عطل">
+                        إصلاح عطل
+                    </option>
+
+                    <option value="صيانة دورية">
+                        صيانة دورية
+                    </option>
+
+                    <option value="فحص">
+                        فحص
+                    </option>
+
+                    <option value="تشخيص">
+                        تشخيص
+                    </option>
+
+                    <option value="استبدال قطعة">
+                        استبدال قطعة
+                    </option>
+
+                    <option value="أخرى">
+                        أخرى
                     </option>
 
                 </select>
@@ -251,86 +266,63 @@
             </div>
 
 
-            <!-- اسم الورشة الخارجية -->
-
-            <div
-                class="form-group external-workshop"
-                id="external-workshop-group"
-            >
-
-                <label for="workshop_name">
-                    اسم الورشة الخارجية
-                </label>
-
-                <input
-                    type="text"
-                    id="workshop_name"
-                    name="workshop_name"
-                    placeholder="اسم الورشة"
-                >
-
-            </div>
-
-
-            <!-- سبب إرسال السيارة -->
+            <!-- وصف العمل أو العطل -->
 
             <div class="form-group full">
 
-                <label for="reason">
-                    سبب إرسال السيارة إلى الصيانة
+                <label for="description">
+                    وصف العمل أو العطل
                 </label>
 
                 <textarea
-                    id="reason"
-                    name="reason"
-                    placeholder="اذكر سبب إرسال السيارة إلى الصيانة..."
+                    id="description"
+                    name="description"
+                    placeholder="اذكر العطل أو العمل الذي سيتم إنجازه..."
                 ></textarea>
 
             </div>
 
 
-            <!-- وثيقة الإرسال -->
+            <!-- تاريخ بدء الصيانة -->
 
             <div class="form-group">
 
-                <label for="dispatch_document">
-                    وثيقة الإرسال
+                <label for="maintenance_date">
+                    تاريخ بدء الصيانة
                 </label>
 
                 <input
-                    type="text"
-                    id="dispatch_document"
-                    name="dispatch_document"
-                    placeholder="رقم وثيقة الإرسال"
+                    type="date"
+                    id="maintenance_date"
+                    name="maintenance_date"
                     required
                 >
 
+            </div>
+
+
+            <!-- تاريخ انتهاء الصيانة -->
+
+            <div class="form-group">
+
+                <label for="completion_date">
+                    تاريخ انتهاء الصيانة
+                </label>
+
+                <input
+                    type="date"
+                    id="completion_date"
+                    name="completion_date"
+                >
+
                 <div class="help-text">
-                    وثيقة الإرسال هي المرجع الأساسي لعملية الصيانة.
+                    يترك فارغًا إذا كانت الصيانة ما زالت جارية.
                 </div>
 
             </div>
 
 
-            <!-- تاريخ الإرسال -->
-
-            <div class="form-group">
-
-                <label for="dispatch_date">
-                    تاريخ الإرسال
-                </label>
-
-                <input
-                    type="date"
-                    id="dispatch_date"
-                    name="dispatch_date"
-                    required
-                >
-
-            </div>
-
-
-            <!-- الحالة -->
+            <!-- حالة الصيانة -->
 
             <div class="form-group">
 
@@ -344,12 +336,16 @@
                     required
                 >
 
-                    <option value="في الصيانة">
-                        في الصيانة
+                    <option value="جارية">
+                        جارية
                     </option>
 
                     <option value="منتهية">
                         منتهية
+                    </option>
+
+                    <option value="ملغاة">
+                        ملغاة
                     </option>
 
                 </select>
@@ -404,55 +400,22 @@
 
 <script>
 
-    function toggleExternalWorkshop() {
-
-        const workshopType =
-            document.getElementById("workshop_type");
-
-        const externalGroup =
-            document.getElementById("external-workshop-group");
-
-        const workshopName =
-            document.getElementById("workshop_name");
-
-
-        if (workshopType.value === "خارج المؤسسة") {
-
-            externalGroup.style.display = "flex";
-
-            workshopName.required = true;
-
-        } else {
-
-            externalGroup.style.display = "none";
-
-            workshopName.required = false;
-
-            workshopName.value = "";
-
-        }
-
-    }
-
-
     document.addEventListener(
         "DOMContentLoaded",
         function () {
 
-            toggleExternalWorkshop();
-
-            const dispatchDate =
-                document.getElementById("dispatch_date");
+            const maintenanceDate =
+                document.getElementById("maintenance_date");
 
             if (
-                dispatchDate &&
-                !dispatchDate.value
+                maintenanceDate &&
+                !maintenanceDate.value
             ) {
 
                 const today =
                     new Date().toISOString().split("T")[0];
 
-                dispatchDate.value = today;
+                maintenanceDate.value = today;
 
             }
 

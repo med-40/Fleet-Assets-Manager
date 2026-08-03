@@ -13,7 +13,6 @@ from app.models.equipment_type import EquipmentType
 from app.models.driver import Driver
 from app.models.mission import Mission
 from app.models.maintenance_order import MaintenanceOrder
-from app.models.workshop_transfer import WorkshopTransfer
 
 
 # =========================================================
@@ -95,7 +94,7 @@ def dashboard(request: Request):
                 text("""
                     SELECT COUNT(*)
                     FROM maintenance_orders
-                    WHERE status IN ('جارية', 'Active')
+                    WHERE status IN ('جارية', 'في الصيانة')
                 """)
             ).scalar() or 0
         except Exception:
@@ -163,9 +162,7 @@ def equipment_page(request: Request):
 
         equipment_list = (
             db.query(Equipment)
-            .order_by(
-                Equipment.registration_number
-            )
+            .order_by(Equipment.registration_number)
             .all()
         )
 
@@ -194,9 +191,7 @@ def equipment_types_list():
 
         equipment_types = (
             db.query(EquipmentType)
-            .order_by(
-                EquipmentType.name
-            )
+            .order_by(EquipmentType.name)
             .all()
         )
 
@@ -225,9 +220,7 @@ def new_equipment_page(request: Request):
 
         equipment_types = (
             db.query(EquipmentType)
-            .order_by(
-                EquipmentType.name
-            )
+            .order_by(EquipmentType.name)
             .all()
         )
 
@@ -274,19 +267,15 @@ def create_equipment(
         status = status.strip()
         department = department.strip()
         fuel_type = fuel_type.strip()
-        fuel_consumption = fuel_consumption.strip()
         notes = notes.strip()
 
         equipment_types = (
             db.query(EquipmentType)
-            .order_by(
-                EquipmentType.name
-            )
+            .order_by(EquipmentType.name)
             .all()
         )
 
         if not receipt_document:
-
             return templates.TemplateResponse(
                 request=request,
                 name="pages/equipment_form.html",
@@ -298,7 +287,6 @@ def create_equipment(
             )
 
         if not registration_number:
-
             return templates.TemplateResponse(
                 request=request,
                 name="pages/equipment_form.html",
@@ -318,8 +306,242 @@ def create_equipment(
         )
 
         if equipment_type is None:
-
             return templates.TemplateResponse(
                 request=request,
                 name="pages/equipment_form.html",
-                context
+                context={
+                    "equipment_types": equipment_types,
+                    "error": "نوع العتاد غير موجود."
+                },
+                status_code=400
+            )
+
+        existing_registration = (
+            db.query(Equipment)
+            .filter(
+                Equipment.registration_number
+                == registration_number
+            )
+            .first()
+        )
+
+        if existing_registration:
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/equipment_form.html",
+                context={
+                    "equipment_types": equipment_types,
+                    "error": "رقم التسجيل موجود مسبقًا."
+                },
+                status_code=400
+            )
+
+        existing_receipt = (
+            db.query(Equipment)
+            .filter(
+                Equipment.receipt_document
+                == receipt_document
+            )
+            .first()
+        )
+
+        if existing_receipt:
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/equipment_form.html",
+                context={
+                    "equipment_types": equipment_types,
+                    "error": "وثيقة الاستلام مستخدمة مسبقًا."
+                },
+                status_code=400
+            )
+
+        new_equipment = Equipment(
+            receipt_document=receipt_document,
+            equipment_type_id=equipment_type_id,
+            model=model,
+            registration_number=registration_number,
+            chassis_number=chassis_number,
+            status=status,
+            department=department,
+            fuel_type=fuel_type,
+            fuel_consumption=fuel_consumption,
+            notes=notes
+        )
+
+        db.add(new_equipment)
+        db.commit()
+
+        return RedirectResponse(
+            url="/equipment",
+            status_code=303
+        )
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# المهمات - القائمة
+# =========================================================
+
+@app.get("/missions")
+def missions_page(request: Request):
+
+    db = SessionLocal()
+
+    try:
+
+        missions = (
+            db.query(Mission)
+            .order_by(Mission.start_date.desc())
+            .all()
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="pages/missions.html",
+            context={
+                "missions": missions
+            }
+        )
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# السيارات المتاحة للمهمات
+# =========================================================
+
+def get_available_equipment(db):
+
+    return (
+        db.query(Equipment)
+        .filter(
+            Equipment.status.in_(
+                [
+                    "متاحة",
+                    "Available",
+                    "Active"
+                ]
+            )
+        )
+        .order_by(
+            Equipment.registration_number
+        )
+        .all()
+    )
+
+
+# =========================================================
+# إضافة مهمة - صفحة النموذج
+# =========================================================
+
+@app.get("/missions/new")
+def new_mission_page(request: Request):
+
+    db = SessionLocal()
+
+    try:
+
+        equipment_list = get_available_equipment(db)
+
+        drivers = (
+            db.query(Driver)
+            .filter(
+                Driver.qualification_confirmed.is_(True),
+                Driver.qualification_level == "جيد"
+            )
+            .order_by(
+                Driver.first_name,
+                Driver.last_name
+            )
+            .all()
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="pages/mission_form.html",
+            context={
+                "equipment_list": equipment_list,
+                "drivers": drivers,
+                "error": None
+            }
+        )
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# إضافة مهمة - حفظ البيانات
+# =========================================================
+
+@app.post("/missions/new")
+def create_mission(
+    request: Request,
+    equipment_id: int = Form(...),
+    driver_id: int = Form(...),
+    crew_leader: str = Form(""),
+    destination: str = Form(""),
+    start_date: str = Form(...),
+    end_date: str = Form(""),
+    status: str = Form("Active"),
+    notes: str = Form("")
+):
+
+    db = SessionLocal()
+
+    try:
+
+        crew_leader = crew_leader.strip()
+        destination = destination.strip()
+        end_date = end_date.strip()
+        notes = notes.strip()
+
+        equipment_list = get_available_equipment(db)
+
+        qualified_drivers = (
+            db.query(Driver)
+            .filter(
+                Driver.qualification_confirmed.is_(True),
+                Driver.qualification_level == "جيد"
+            )
+            .order_by(
+                Driver.first_name,
+                Driver.last_name
+            )
+            .all()
+        )
+
+        equipment = (
+            db.query(Equipment)
+            .filter(
+                Equipment.id == equipment_id
+            )
+            .first()
+        )
+
+        if equipment is None:
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": "السيارة / العتاد غير موجود."
+                },
+                status_code=400
+            )
+
+        available_statuses = (
+            "متاحة",
+            "Available",
+            "Active"
+        )
+
+        if equipment.status not in available_statuses:
+            return templates.TemplateResponse(
+                request=request,
+               

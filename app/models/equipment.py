@@ -80,6 +80,50 @@ class Equipment(Base):
         "EquipmentType"
     )
 
+    # رقم التسجيل
+    registration_number = Column(
+        String(100),
+        unique=True,
+        nullable=False
+    )
+
+    # رقم الهيكل
+    chassis_number = Column(
+        String(150),
+        unique=True
+    )
+
+    # الحالة
+    status = Column(
+        String(50),
+        default="متاحة"
+    )
+
+    # المصلحة
+    department = Column(
+        String(150)
+    )
+
+    # نوع الوقود
+    fuel_type = Column(
+        String(50)
+    )
+
+    # معدل الاستهلاك
+    fuel_consumption = Column(
+        Float
+    )
+
+    # الملاحظات
+    notes = Column(
+        String(500)
+    )
+
+    # العلاقة مع نوع العتاد
+    equipment_type = relationship(
+        "EquipmentType"
+    )
+
     # العلاقة مع التحويلات إلى الورش الخارجية
     workshop_transfers = relationship(
         "WorkshopTransfer",

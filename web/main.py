@@ -925,7 +925,7 @@ def create_maintenance(
 
             status = "جارية"
 
-        # -------------------------------------------------
+# -------------------------------------------------
         # إنشاء سجل الصيانة الداخلية
         # -------------------------------------------------
 
@@ -945,4 +945,20 @@ def create_maintenance(
         # تغيير حالة العتاد تلقائيًا
         # -------------------------------------------------
 
-        if
+        if status == "جارية":
+
+            equipment.status = "في الصيانة"
+
+        elif status == "منتهية":
+
+            new_maintenance.completion_date = date.today()
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/maintenance",
+            status_code=303
+        )
+
+    finally:
+        db.close()

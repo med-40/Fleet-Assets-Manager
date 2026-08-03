@@ -49,7 +49,7 @@
     table {
         width: 100%;
         border-collapse: collapse;
-        min-width: 1100px;
+        min-width: 1250px;
     }
 
     th {
@@ -105,6 +105,24 @@
         border-radius: 50%;
         background: #198754;
         margin-left: 5px;
+    }
+
+    .action-button {
+        border: none;
+        padding: 7px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .complete-button {
+        background: #198754;
+        color: white;
+    }
+
+    .complete-button:hover {
+        background: #157347;
     }
 
     .empty {
@@ -168,6 +186,8 @@
 
                 <th>الملاحظات</th>
 
+                <th>الإجراء</th>
+
             </tr>
 
         </thead>
@@ -178,6 +198,9 @@
             {% for mission in missions %}
 
             <tr>
+
+
+                <!-- السيارة / العتاد -->
 
                 <td>
 
@@ -197,6 +220,8 @@
 
                 </td>
 
+
+                <!-- السائق -->
 
                 <td>
 
@@ -220,6 +245,8 @@
                 </td>
 
 
+                <!-- رتبة السائق -->
+
                 <td>
 
                     {% if mission.driver %}
@@ -235,12 +262,16 @@
                 </td>
 
 
+                <!-- قائد المتن -->
+
                 <td>
 
                     {{ mission.crew_leader or "-" }}
 
                 </td>
 
+
+                <!-- الوجهة -->
 
                 <td>
 
@@ -249,6 +280,8 @@
                 </td>
 
 
+                <!-- تاريخ البداية -->
+
                 <td>
 
                     {{ mission.start_date or "-" }}
@@ -256,12 +289,16 @@
                 </td>
 
 
+                <!-- تاريخ النهاية -->
+
                 <td>
 
                     {{ mission.end_date or "-" }}
 
                 </td>
 
+
+                <!-- الحالة -->
 
                 <td>
 
@@ -294,11 +331,45 @@
                 </td>
 
 
+                <!-- الملاحظات -->
+
                 <td>
 
                     {{ mission.notes or "-" }}
 
                 </td>
+
+
+                <!-- الإجراء -->
+
+                <td>
+
+                    {% if mission.status == "Active" or mission.status == "جارية" %}
+
+                        <form
+                            method="post"
+                            action="/missions/{{ mission.id }}/complete"
+                            onsubmit="return confirm('هل تريد تسجيل إنهاء هذه المهمة الآن؟');"
+                            style="display: inline;"
+                        >
+
+                            <button
+                                type="submit"
+                                class="action-button complete-button"
+                            >
+                                إنهاء المهمة
+                            </button>
+
+                        </form>
+
+                    {% else %}
+
+                        -
+
+                    {% endif %}
+
+                </td>
+
 
             </tr>
 

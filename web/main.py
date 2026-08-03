@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import text
+from sqlalchemy import text, func
 
 from app.database.session import SessionLocal
 from app.models.equipment import Equipment
@@ -72,6 +72,7 @@ def dashboard(request: Request):
             vehicles = db.execute(
                 text("SELECT COUNT(*) FROM equipment")
             ).scalar() or 0
+
         except Exception:
             vehicles = 0
 
@@ -83,6 +84,7 @@ def dashboard(request: Request):
                     WHERE status IN ('جارية', 'Active')
                 """)
             ).scalar() or 0
+
         except Exception:
             active_missions = 0
 
@@ -93,6 +95,7 @@ def dashboard(request: Request):
                     FROM maintenance_orders
                 """)
             ).scalar() or 0
+
         except Exception:
             due_maintenance = 0
 
@@ -103,6 +106,7 @@ def dashboard(request: Request):
                     FROM fuel_logs
                 """)
             ).scalar() or 0
+
         except Exception:
             monthly_fuel = 0
 
@@ -113,6 +117,7 @@ def dashboard(request: Request):
                     FROM batteries
                 """)
             ).scalar() or 0
+
         except Exception:
             batteries = 0
 
@@ -123,6 +128,7 @@ def dashboard(request: Request):
                     FROM tires
                 """)
             ).scalar() or 0
+
         except Exception:
             tires = 0
 
@@ -155,6 +161,7 @@ def equipment_page(request: Request):
     db = SessionLocal()
 
     try:
+
         equipment_list = (
             db.query(Equipment)
             .order_by(Equipment.registration_number)
@@ -183,6 +190,7 @@ def equipment_types_list():
     db = SessionLocal()
 
     try:
+
         equipment_types = (
             db.query(EquipmentType)
             .order_by(EquipmentType.name)
@@ -211,6 +219,7 @@ def new_equipment_page(request: Request):
     db = SessionLocal()
 
     try:
+
         equipment_types = (
             db.query(EquipmentType)
             .order_by(EquipmentType.name)
@@ -252,6 +261,7 @@ def create_equipment(
     db = SessionLocal()
 
     try:
+
         receipt_document = receipt_document.strip()
         model = model.strip()
         registration_number = registration_number.strip()
@@ -269,6 +279,7 @@ def create_equipment(
         )
 
         if not receipt_document:
+
             return templates.TemplateResponse(
                 request=request,
                 name="pages/equipment_form.html",
@@ -280,6 +291,7 @@ def create_equipment(
             )
 
         if not registration_number:
+
             return templates.TemplateResponse(
                 request=request,
                 name="pages/equipment_form.html",
@@ -299,6 +311,7 @@ def create_equipment(
         )
 
         if equipment_type is None:
+
             return templates.TemplateResponse(
                 request=request,
                 name="pages/equipment_form.html",
@@ -319,6 +332,7 @@ def create_equipment(
         )
 
         if existing_registration:
+
             return templates.TemplateResponse(
                 request=request,
                 name="pages/equipment_form.html",
@@ -339,6 +353,7 @@ def create_equipment(
         )
 
         if existing_receipt:
+
             return templates.TemplateResponse(
                 request=request,
                 name="pages/equipment_form.html",
@@ -384,6 +399,7 @@ def missions_page(request: Request):
     db = SessionLocal()
 
     try:
+
         missions = (
             db.query(Mission)
             .order_by(Mission.start_date.desc())
@@ -403,6 +419,89 @@ def missions_page(request: Request):
 
 
 # =========================================================
+# دالة مساعدة:
+# السيارات الصالحة للاختيار في مهمة
+# =========================================================
+
+def get_available_equipment_for_mission(db):
+
+    # -----------------------------------------------------
+    # السيارات الموجودة في مهمات جارية
+    # -----------------------------------------------------
+
+    active_mission_equipment_ids = (
+        db.query(Mission.equipment_id)
+        .filter(
+            Mission.status.in_(
+                ["جارية", "Active"]
+            )
+        )
+        .subquery()
+    )
+
+    # -----------------------------------------------------
+    # نعرض فقط السيارات التي حالتها "متاحة"
+    # ولا توجد في مهمة جارية.
+    #
+    # أي حالة أخرى:
+    # عاطلة
+    # غير متاحة
+    # في الصيانة
+    # في الورشة
+    # متوقفة
+    # ... إلخ
+    #
+    # لن تظهر للاختيار.
+    # -----------------------------------------------------
+
+    equipment_list = (
+        db.query(Equipment)
+        .filter(
+            func.lower(
+                func.trim(Equipment.status)
+            ).in_(
+                [
+                    "متاحة",
+                    "available"
+                ]
+            )
+        )
+        .filter(
+            ~Equipment.id.in_(
+                active_mission_equipment_ids
+            )
+        )
+        .order_by(
+            Equipment.registration_number
+        )
+        .all()
+    )
+
+    return equipment_list
+
+
+# =========================================================
+# دالة مساعدة:
+# السائقون المؤهلون فقط
+# =========================================================
+
+def get_qualified_drivers(db):
+
+    return (
+        db.query(Driver)
+        .filter(
+            Driver.qualification_confirmed.is_(True),
+            Driver.qualification_level == "جيد"
+        )
+        .order_by(
+            Driver.first_name,
+            Driver.last_name
+        )
+        .all()
+    )
+
+
+# =========================================================
 # إضافة مهمة - صفحة النموذج
 # =========================================================
 
@@ -414,29 +513,11 @@ def new_mission_page(request: Request):
     try:
 
         equipment_list = (
-            db.query(Equipment)
-            .order_by(Equipment.registration_number)
-            .all()
+            get_available_equipment_for_mission(db)
         )
 
-        # =================================================
-        # مهم جدًا:
-        # لا نعرض إلا السائق الذي:
-        # 1. أكد التأهيل
-        # 2. درجته "جيد"
-        # =================================================
-
         drivers = (
-            db.query(Driver)
-            .filter(
-                Driver.qualification_confirmed.is_(True),
-                Driver.qualification_level == "جيد"
-            )
-            .order_by(
-                Driver.first_name,
-                Driver.last_name
-            )
-            .all()
+            get_qualified_drivers(db)
         )
 
         return templates.TemplateResponse(
@@ -481,26 +562,19 @@ def create_mission(
         notes = notes.strip()
 
         # =================================================
-        # إعادة تحميل السيارات والسائقين في حالة الخطأ
+        # السيارات المتاحة فقط
         # =================================================
 
         equipment_list = (
-            db.query(Equipment)
-            .order_by(Equipment.registration_number)
-            .all()
+            get_available_equipment_for_mission(db)
         )
 
+        # =================================================
+        # السائقون المؤهلون فقط
+        # =================================================
+
         qualified_drivers = (
-            db.query(Driver)
-            .filter(
-                Driver.qualification_confirmed.is_(True),
-                Driver.qualification_level == "جيد"
-            )
-            .order_by(
-                Driver.first_name,
-                Driver.last_name
-            )
-            .all()
+            get_qualified_drivers(db)
         )
 
         # =================================================
@@ -516,6 +590,7 @@ def create_mission(
         )
 
         if equipment is None:
+
             return templates.TemplateResponse(
                 request=request,
                 name="pages/mission_form.html",
@@ -523,6 +598,64 @@ def create_mission(
                     "equipment_list": equipment_list,
                     "drivers": qualified_drivers,
                     "error": "السيارة / العتاد غير موجود."
+                },
+                status_code=400
+            )
+
+        # =================================================
+        # التحقق من حالة السيارة
+        # =================================================
+
+        equipment_status = (
+            equipment.status or ""
+        ).strip().lower()
+
+        if equipment_status not in (
+            "متاحة",
+            "available"
+        ):
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": (
+                        "لا يمكن تسجيل المهمة. "
+                        "السيارة / العتاد غير متاح حاليًا."
+                    )
+                },
+                status_code=400
+            )
+
+        # =================================================
+        # التحقق من عدم وجود مهمة جارية
+        # =================================================
+
+        active_mission = (
+            db.query(Mission)
+            .filter(
+                Mission.equipment_id == equipment_id,
+                Mission.status.in_(
+                    ["جارية", "Active"]
+                )
+            )
+            .first()
+        )
+
+        if active_mission is not None:
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": (
+                        "لا يمكن تسجيل المهمة. "
+                        "السيارة موجودة حاليًا في مهمة جارية."
+                    )
                 },
                 status_code=400
             )
@@ -542,6 +675,7 @@ def create_mission(
         )
 
         if driver is None:
+
             return templates.TemplateResponse(
                 request=request,
                 name="pages/mission_form.html",
@@ -550,7 +684,8 @@ def create_mission(
                     "drivers": qualified_drivers,
                     "error": (
                         "لا يمكن اختيار هذا السائق. "
-                        "يجب أن يكون مؤهلًا بدرجة جيد ومؤكد التأهيل."
+                        "يجب أن يكون مؤهلًا بدرجة جيد "
+                        "ومؤكد التأهيل."
                     )
                 },
                 status_code=400
@@ -561,10 +696,13 @@ def create_mission(
         # =================================================
 
         try:
+
             parsed_start_date = date.fromisoformat(
                 start_date
             )
+
         except ValueError:
+
             return templates.TemplateResponse(
                 request=request,
                 name="pages/mission_form.html",
@@ -585,10 +723,13 @@ def create_mission(
         if end_date:
 
             try:
+
                 parsed_end_date = date.fromisoformat(
                     end_date
                 )
+
             except ValueError:
+
                 return templates.TemplateResponse(
                     request=request,
                     name="pages/mission_form.html",
@@ -601,6 +742,7 @@ def create_mission(
                 )
 
             if parsed_end_date < parsed_start_date:
+
                 return templates.TemplateResponse(
                     request=request,
                     name="pages/mission_form.html",

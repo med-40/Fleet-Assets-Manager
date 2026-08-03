@@ -1,14 +1,9 @@
-from sqlalchemy import Column
-from sqlalchemy import Date
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import String
+from sqlalchemy import Column, Date, ForeignKey, Integer, String
 
 from app.database.base import Base
 
 class Mission(Base):
-
-__tablename__ = "missions"
+tablename = "missions"
 
 id = Column(
     Integer,

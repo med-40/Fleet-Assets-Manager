@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block title %}
+إضافة مهمة - نظام تسيير الحضيرة
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+    .form-header {
+        margin-bottom: 25px;
+    }
+
+    .form-header h1 {
+        margin: 0;
+        font-size: 30px;
+    }
+
+    .form-header p {
+        color: #666;
+        margin-top: 8px;
+    }
+
+    .form-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 25px;
+        max-width: 900px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+    }
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .field label {
+        font-weight: bold;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+        padding: 11px;
+        border: 1px solid #ccc;
+        border-radius: 7px;
+        font-size: 15px;
+        background: white;
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    .field textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .full-width {
+        grid-column: 1 / -1;
+    }
+
+    .driver-option {
+        padding: 8px;
+    }
+
+    .qualification-info {
+        margin-top: 8px;
+        padding: 9px 12px;
+        background: #e8f5e9;
+        border-radius: 7px;
+        color: #146c2e;
+        font-size: 14px;
+    }
+
+    .qualification-dot {
+        display: inline-block;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #198754;
+        margin-left: 6px;
+    }
+
+    .buttons {
+        margin-top: 25px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .button {
+        padding: 11px 22px;
+        border: none;
+        border-radius: 7px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 15px;
+    }
+
+    .save {
+        background: #198754;
+        color: white;
+    }
+
+    .save:hover {
+        background: #157347;
+    }
+
+    .cancel {
+        background: #eeeeee;
+        color: #333;
+    }
+
+    .error {
+        background: #ffe5e5;
+        color: #a00;
+        padding: 12px;
+        border-radius: 7px;
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 700px) {
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .full-width {
+            grid-column: auto;
+        }
+
+    }
+
+</style>
+
+
+<div class="form-header">
+
+    <h1>
+        إضافة مهمة
+    </h1>
+
+    <p>
+        إدخال مهمة جديدة للعتاد
+    </p>
+
+</div>
+
+
+<div class="form-card">
+
+    {% if error %}
+
+        <div class="error">
+            {{ error }}
+        </div>
+
+    {% endif %}
+
+
+    <form method="post" action="/missions/new">
+
+        <div class="form-grid">
+
+
+            <!-- العتاد -->
+
+            <div class="field">
+
+                <label for="equipment_id">
+                    السيارة / العتاد *
+                </label>
+
+                <select
+                    id="equipment_id"
+                    name="equipment_id"
+                    required
+                >
+
+                    <option value="">
+                        اختر السيارة / العتاد
+                    </option>
+
+                    {% for equipment in equipment_list %}
+
+                        <option value="{{ equipment.id }}">
+
+                            {{ equipment.registration_number }}
+
+                            {% if equipment.model %}
+                                — {{ equipment.model }}
+                            {% endif %}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <!-- السائق -->
+
+            <div class="field">
+
+                <label for="driver_id">
+                    السائق *
+                </label>
+
+                <select
+                    id="driver_id"
+                    name="driver_id"
+                    required
+                >
+
+                    <option value="">
+                        اختر السائق المؤهل
+                    </option>
+
+                    {% for driver in drivers %}
+
+                        <option
+                            value="{{ driver.id }}"
+                            class="driver-option"
+                        >
+
+                            🟢
+                            {{ driver.first_name }}
+                            {{ driver.last_name }}
+
+                            {% if driver.rank %}
+                                — {{ driver.rank }}
+                            {% endif %}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <div class="qualification-info">
+
+                    <span class="qualification-dot"></span>
+
+                    القائمة تعرض السائقين المؤهلين بدرجة
+                    <strong>جيد</strong>
+                    فقط.
+
+                </div>
+
+            </div>
+
+
+            <!-- قائد المتن -->
+
+            <div class="field">
+
+                <label for="crew_leader">
+                    قائد المتن
+                </label>
+
+                <input
+                    id="crew_leader"
+                    type="text"
+                    name="crew_leader"
+                    placeholder="أدخل اسم قائد المتن يدويًا"
+                >
+
+            </div>
+
+
+            <!-- الوجهة -->
+
+            <div class="field">
+
+                <label for="destination">
+                    الوجهة
+                </label>
+
+                <input
+                    id="destination"
+                    type="text"
+                    name="destination"
+                    placeholder="مثال: الجزائر - وهران"
+                >
+
+            </div>
+
+
+            <!-- تاريخ البداية -->
+
+            <div class="field">
+
+                <label for="start_date">
+                    تاريخ بداية المهمة *
+                </label>
+
+                <input
+                    id="start_date"
+                    type="date"
+                    name="start_date"
+                    required
+                >
+
+            </div>
+
+
+            <!-- تاريخ النهاية -->
+
+            <div class="field">
+
+                <label for="end_date">
+                    تاريخ نهاية المهمة
+                </label>
+
+                <input
+                    id="end_date"
+                    type="date"
+                    name="end_date"
+                >
+
+            </div>
+
+
+            <!-- الحالة -->
+
+            <div class="field">
+
+                <label for="status">
+                    حالة المهمة
+                </label>
+
+                <select
+                    id="status"
+                    name="status"
+                >
+
+                    <option value="Active">
+                        جارية
+                    </option>
+
+                    <option value="Completed">
+                        منتهية
+                    </option>
+
+                    <option value="Cancelled">
+                        ملغاة
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- الملاحظات -->
+
+            <div class="field full-width">
+
+                <label for="notes">
+                    الملاحظات
+                </label>
+
+                <textarea
+                    id="notes"
+                    name="notes"
+                    placeholder="أدخل ملاحظات المهمة إن وجدت..."
+                ></textarea>
+
+            </div>
+
+
+        </div>
+
+
+        <div class="buttons">
+
+            <button
+                type="submit"
+                class="button save"
+            >
+                حفظ المهمة
+            </button>
+
+
+            <a
+                href="/missions"
+                class="button cancel"
+            >
+                إلغاء
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

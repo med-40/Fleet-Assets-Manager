@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}
+الصيانة - نظام تسيير الحضيرة
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+
+    .page-header h1 {
+        margin: 0;
+        font-size: 30px;
+    }
+
+    .page-header p {
+        margin: 8px 0 0;
+        color: #666;
+    }
+
+    .add-button {
+        display: inline-block;
+        padding: 11px 20px;
+        background: #198754;
+        color: white;
+        text-decoration: none;
+        border-radius: 7px;
+        font-weight: bold;
+    }
+
+    .add-button:hover {
+        background: #157347;
+    }
+
+    .table-container {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1250px;
+    }
+
+    th {
+        background: #f1f3f5;
+        font-weight: bold;
+        white-space: nowrap;
+    }
+
+    th,
+    td {
+        padding: 13px 12px;
+        border-bottom: 1px solid #e5e5e5;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    tr:hover td {
+        background: #fafafa;
+    }
+
+    .status {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 13px;
+        background: #eeeeee;
+    }
+
+    .status-inside {
+        background: #cfe2ff;
+        color: #084298;
+    }
+
+    .status-outside {
+        background: #fff3cd;
+        color: #664d03;
+    }
+
+    .status-completed {
+        background: #d1e7dd;
+        color: #0f5132;
+    }
+
+    .document {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .empty {
+        text-align: center;
+        padding: 50px;
+        color: #777;
+    }
+
+</style>
+
+
+<div class="page-header">
+
+    <div>
+
+        <h1>
+            الصيانة
+        </h1>
+
+        <p>
+            متابعة عمليات صيانة وإرسال العتاد إلى الورش
+        </p>
+
+    </div>
+
+    <a
+        href="/maintenance/new"
+        class="add-button"
+    >
+        + إضافة صيانة
+    </a>
+
+</div>
+
+
+<div class="table-container">
+
+    {% if maintenance_orders %}
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>السيارة / العتاد</th>
+
+                <th>نوع الورشة</th>
+
+                <th>الورشة الخارجية</th>
+
+                <th>سبب الإرسال</th>
+
+                <th>وثيقة الإرسال</th>
+
+                <th>تاريخ الإرسال</th>
+
+                <th>تاريخ الإرجاع</th>
+
+                <th>الحالة</th>
+
+                <th>الملاحظات</th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+            {% for order in maintenance_orders %}
+
+            <tr>
+
+                <!-- السيارة / العتاد -->
+
+                <td>
+
+                    {% if order.equipment %}
+
+                        {{ order.equipment.registration_number }}
+
+                        {% if order.equipment.model %}
+
+                            — {{ order.equipment.model }}
+
+                        {% endif %}
+
+                    {% else %}
+
+                        -
+
+                    {% endif %}
+
+                </td>
+
+
+                <!-- نوع الورشة -->
+
+                <td>
+
+                    {% if order.workshop_type == "داخل المؤسسة" %}
+
+                        <span class="status status-inside">
+                            داخل المؤسسة
+                        </span>
+
+                    {% elif order.workshop_type == "خارج المؤسسة" %}
+
+                        <span class="status status-outside">
+                            خارج المؤسسة
+                        </span>
+
+                    {% else %}
+
+                        {{ order.workshop_type or "-" }}
+
+                    {% endif %}
+
+                </td>
+
+
+                <!-- اسم الورشة الخارجية -->
+
+                <td>
+
+                    {{ order.workshop_name or "-" }}
+
+                </td>
+
+
+                <!-- سبب الإرسال -->
+
+                <td>
+
+                    {{ order.reason or "-" }}
+
+                </td>
+
+
+                <!-- وثيقة الإرسال -->
+
+                <td>
+
+                    {% if order.dispatch_document %}
+
+                        <span class="document">
+                            {{ order.dispatch_document }}
+                        </span>
+
+                    {% else %}
+
+                        -
+
+                    {% endif %}
+
+                </td>
+
+
+                <!-- تاريخ الإرسال -->
+
+                <td>
+
+                    {{ order.dispatch_date or "-" }}
+
+                </td>
+
+
+                <!-- تاريخ الإرجاع -->
+
+                <td>
+
+                    {{ order.return_date or "-" }}
+
+                </td>
+
+
+                <!-- الحالة -->
+
+                <td>
+
+                    {% if order.status in ["خارج المؤسسة", "جارية", "Active"] %}
+
+                        <span class="status status-outside">
+                            {{ order.status }}
+                        </span>
+
+                    {% elif order.status in ["منتهية", "مكتملة", "Completed"] %}
+
+                        <span class="status status-completed">
+                            {{ order.status }}
+                        </span>
+
+                    {% elif order.status in ["داخل المؤسسة"] %}
+
+                        <span class="status status-inside">
+                            {{ order.status }}
+                        </span>
+
+                    {% else %}
+
+                        <span class="status">
+                            {{ order.status or "-" }}
+                        </span>
+
+                    {% endif %}
+
+                </td>
+
+
+                <!-- الملاحظات -->
+
+                <td>
+
+                    {{ order.notes or "-" }}
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+    {% else %}
+
+    <div class="empty">
+
+        لا توجد عمليات صيانة مسجلة حاليًا.
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

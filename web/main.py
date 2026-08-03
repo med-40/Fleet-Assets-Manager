@@ -295,4 +295,43 @@ def create_equipment(
             db.query(Equipment)
             .filter(
                 Equipment.receipt_document
-                == receipt
+                == receipt_document
+            )
+            .first()
+        )
+
+        if existing_receipt:
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/equipment_form.html",
+                context={
+                    "equipment_types": equipment_types,
+                    "error": "وثيقة الاستلام مستخدمة مسبقًا."
+                },
+                status_code=400
+            )
+
+        new_equipment = Equipment(
+            receipt_document=receipt_document,
+            equipment_type_id=equipment_type_id,
+            model=model,
+            registration_number=registration_number,
+            chassis_number=chassis_number,
+            status=status,
+            department=department,
+            fuel_type=fuel_type,
+            fuel_consumption=fuel_consumption,
+            notes=notes,
+            date_added=date.today()
+        )
+
+        db.add(new_equipment)
+        db.commit()
+
+        return RedirectResponse(
+            url="/equipment",
+            status_code=303
+        )
+
+    finally:
+        db.close()

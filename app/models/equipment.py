@@ -1,8 +1,8 @@
 from sqlalchemy import Column
+from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
-from sqlalchemy import Float
 from sqlalchemy.orm import relationship
 
 from app.database.base import Base
@@ -49,7 +49,7 @@ class Equipment(Base):
         unique=True
     )
 
-    # الحالة
+    # الحالة الحالية للعتاد
     status = Column(
         String(50),
         default="متاحة"
@@ -75,18 +75,25 @@ class Equipment(Base):
         String(500)
     )
 
-    # العلاقة مع نوع العتاد
+    # =====================================================
+    # العلاقات
+    # =====================================================
+
+    # نوع العتاد
     equipment_type = relationship(
         "EquipmentType"
     )
 
-    # ملاحظة: تمت إزالة العلاقة مع "WorkshopTransfer" مؤقتًا
-    # لأن نموذج WorkshopTransfer غير موجود بعد في app/models/.
-    # عند إنشاء app/models/workshop_transfer.py مستقبلاً،
-    # يمكن إعادة إضافة هذا السطر:
-    #
-    # workshop_transfers = relationship(
-    #     "WorkshopTransfer",
-    #     back_populates="equipment",
-    #     cascade="all, delete-orphan"
-    # )
+    # الصيانة داخل المؤسسة
+    maintenance_orders = relationship(
+        "MaintenanceOrder",
+        back_populates="equipment",
+        cascade="all, delete-orphan"
+    )
+
+    # تحويلات الورشات الخارجية
+    workshop_transfers = relationship(
+        "WorkshopTransfer",
+        back_populates="equipment",
+        cascade="all, delete-orphan"
+    )

@@ -1,3 +1,4 @@
+from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import Date
 from sqlalchemy import Integer
@@ -41,34 +42,33 @@ class Driver(Base):
         unique=True
     )
 
-    # تاريخ انتهاء رخصة السياقة
     license_expiry_date = Column(
         Date
     )
 
-    # الحالة العامة للسائق
+    # الحالة الإدارية للسائق
     status = Column(
         String(50),
         default="Active"
     )
 
-    # =====================================================
+    # -----------------------------------------------------
     # التأهيل
-    # =====================================================
+    # -----------------------------------------------------
 
     # هل اجتاز السائق مرحلة التأكيد؟
-    # False = لم يجتزها وبالتالي غير مؤهل
-    # True  = اجتازها ويمكن أن تكون له درجة تأهيل
     qualification_confirmed = Column(
-        Integer,
-        default=0,
+        Boolean,
+        default=False,
         nullable=False
     )
 
-    # درجة التأهيل بعد اجتياز مرحلة التأكيد
-    # القيم:
+    # درجة التأهيل:
     # سيئ / حسن / جيد
+    #
+    # إذا qualification_confirmed = False
+    # يعتبر السائق غير مؤهل مهما كانت قيمة هذا الحقل.
     qualification_level = Column(
-        String(50),
+        String(20),
         nullable=True
     )

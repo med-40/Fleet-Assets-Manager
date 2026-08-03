@@ -19,4 +19,446 @@
 
     .page-header p {
         margin: 8px 0 0;
-        color: #
+        color: #666;
+    }
+
+    .form-container {
+        max-width: 850px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 25px;
+        margin: 0 auto;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group.full {
+        grid-column: 1 / -1;
+    }
+
+    label {
+        margin-bottom: 7px;
+        font-weight: bold;
+    }
+
+    input,
+    select,
+    textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 11px 12px;
+        border: 1px solid #ccc;
+        border-radius: 7px;
+        font-size: 15px;
+        background: white;
+    }
+
+    textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #198754;
+        box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.12);
+    }
+
+    .help-text {
+        margin-top: 5px;
+        font-size: 12px;
+        color: #777;
+    }
+
+    .error {
+        background: #f8d7da;
+        color: #842029;
+        border: 1px solid #f1aeb5;
+        border-radius: 7px;
+        padding: 12px;
+        margin-bottom: 20px;
+    }
+
+    .button-row {
+        display: flex;
+        justify-content: flex-start;
+        gap: 10px;
+        margin-top: 25px;
+    }
+
+    .save-button {
+        border: none;
+        padding: 12px 25px;
+        background: #198754;
+        color: white;
+        border-radius: 7px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 15px;
+    }
+
+    .save-button:hover {
+        background: #157347;
+    }
+
+    .cancel-button {
+        display: inline-block;
+        padding: 12px 25px;
+        background: #6c757d;
+        color: white;
+        text-decoration: none;
+        border-radius: 7px;
+        font-weight: bold;
+    }
+
+    .cancel-button:hover {
+        background: #5c636a;
+    }
+
+    .external-workshop {
+        display: none;
+    }
+
+    @media (max-width: 700px) {
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group.full {
+            grid-column: auto;
+        }
+
+        .form-container {
+            padding: 18px;
+        }
+
+    }
+
+</style>
+
+
+<div class="page-header">
+
+    <h1>
+        إضافة صيانة
+    </h1>
+
+    <p>
+        تسجيل إرسال سيارة أو عتاد إلى الصيانة
+    </p>
+
+</div>
+
+
+<div class="form-container">
+
+    {% if error %}
+
+        <div class="error">
+            {{ error }}
+        </div>
+
+    {% endif %}
+
+
+    <form
+        method="post"
+        action="/maintenance/new"
+    >
+
+        <div class="form-grid">
+
+
+            <!-- السيارة / العتاد -->
+
+            <div class="form-group full">
+
+                <label for="equipment_id">
+                    السيارة / العتاد
+                </label>
+
+                <select
+                    id="equipment_id"
+                    name="equipment_id"
+                    required
+                >
+
+                    <option value="">
+                        -- اختر السيارة / العتاد --
+                    </option>
+
+                    {% for equipment in equipment_list %}
+
+                        <option value="{{ equipment.id }}">
+
+                            {{ equipment.registration_number }}
+
+                            {% if equipment.model %}
+                                — {{ equipment.model }}
+                            {% endif %}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <div class="help-text">
+                    تظهر هنا السيارات والعتاد المتاح لإرساله إلى الصيانة.
+                </div>
+
+            </div>
+
+
+            <!-- نوع الورشة -->
+
+            <div class="form-group">
+
+                <label for="workshop_type">
+                    نوع الورشة
+                </label>
+
+                <select
+                    id="workshop_type"
+                    name="workshop_type"
+                    required
+                    onchange="toggleExternalWorkshop()"
+                >
+
+                    <option value="داخل المؤسسة">
+                        داخل المؤسسة
+                    </option>
+
+                    <option value="خارج المؤسسة">
+                        خارج المؤسسة
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- اسم الورشة الخارجية -->
+
+            <div
+                class="form-group external-workshop"
+                id="external-workshop-group"
+            >
+
+                <label for="workshop_name">
+                    اسم الورشة الخارجية
+                </label>
+
+                <input
+                    type="text"
+                    id="workshop_name"
+                    name="workshop_name"
+                    placeholder="اسم الورشة"
+                >
+
+            </div>
+
+
+            <!-- سبب إرسال السيارة -->
+
+            <div class="form-group full">
+
+                <label for="reason">
+                    سبب إرسال السيارة إلى الصيانة
+                </label>
+
+                <textarea
+                    id="reason"
+                    name="reason"
+                    placeholder="اذكر سبب إرسال السيارة إلى الصيانة..."
+                ></textarea>
+
+            </div>
+
+
+            <!-- وثيقة الإرسال -->
+
+            <div class="form-group">
+
+                <label for="dispatch_document">
+                    وثيقة الإرسال
+                </label>
+
+                <input
+                    type="text"
+                    id="dispatch_document"
+                    name="dispatch_document"
+                    placeholder="رقم وثيقة الإرسال"
+                    required
+                >
+
+                <div class="help-text">
+                    وثيقة الإرسال هي المرجع الأساسي لعملية الصيانة.
+                </div>
+
+            </div>
+
+
+            <!-- تاريخ الإرسال -->
+
+            <div class="form-group">
+
+                <label for="dispatch_date">
+                    تاريخ الإرسال
+                </label>
+
+                <input
+                    type="date"
+                    id="dispatch_date"
+                    name="dispatch_date"
+                    required
+                >
+
+            </div>
+
+
+            <!-- الحالة -->
+
+            <div class="form-group">
+
+                <label for="status">
+                    حالة الصيانة
+                </label>
+
+                <select
+                    id="status"
+                    name="status"
+                    required
+                >
+
+                    <option value="في الصيانة">
+                        في الصيانة
+                    </option>
+
+                    <option value="منتهية">
+                        منتهية
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- الملاحظات -->
+
+            <div class="form-group full">
+
+                <label for="notes">
+                    ملاحظات
+                </label>
+
+                <textarea
+                    id="notes"
+                    name="notes"
+                    placeholder="ملاحظات إضافية..."
+                ></textarea>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- الأزرار -->
+
+        <div class="button-row">
+
+            <button
+                type="submit"
+                class="save-button"
+            >
+                حفظ الصيانة
+            </button>
+
+            <a
+                href="/maintenance"
+                class="cancel-button"
+            >
+                إلغاء
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<script>
+
+    function toggleExternalWorkshop() {
+
+        const workshopType =
+            document.getElementById("workshop_type");
+
+        const externalGroup =
+            document.getElementById("external-workshop-group");
+
+        const workshopName =
+            document.getElementById("workshop_name");
+
+
+        if (workshopType.value === "خارج المؤسسة") {
+
+            externalGroup.style.display = "flex";
+
+            workshopName.required = true;
+
+        } else {
+
+            externalGroup.style.display = "none";
+
+            workshopName.required = false;
+
+            workshopName.value = "";
+
+        }
+
+    }
+
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            toggleExternalWorkshop();
+
+            const dispatchDate =
+                document.getElementById("dispatch_date");
+
+            if (
+                dispatchDate &&
+                !dispatchDate.value
+            ) {
+
+                const today =
+                    new Date().toISOString().split("T")[0];
+
+                dispatchDate.value = today;
+
+            }
+
+        }
+    );
+
+</script>
+
+{% endblock %}

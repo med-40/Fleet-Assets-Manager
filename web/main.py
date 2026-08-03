@@ -61,10 +61,6 @@ def dashboard(request: Request):
         batteries = 0
         tires = 0
 
-        # -------------------------------------------------
-        # عدد العتاد
-        # -------------------------------------------------
-
         try:
 
             vehicles = db.execute(
@@ -74,10 +70,6 @@ def dashboard(request: Request):
         except Exception:
 
             vehicles = 0
-
-        # -------------------------------------------------
-        # المهمات الجارية
-        # -------------------------------------------------
 
         try:
 
@@ -93,10 +85,6 @@ def dashboard(request: Request):
 
             active_missions = 0
 
-        # -------------------------------------------------
-        # الصيانة
-        # -------------------------------------------------
-
         try:
 
             due_maintenance = db.execute(
@@ -109,10 +97,6 @@ def dashboard(request: Request):
         except Exception:
 
             due_maintenance = 0
-
-        # -------------------------------------------------
-        # الوقود
-        # -------------------------------------------------
 
         try:
 
@@ -127,10 +111,6 @@ def dashboard(request: Request):
 
             monthly_fuel = 0
 
-        # -------------------------------------------------
-        # البطاريات
-        # -------------------------------------------------
-
         try:
 
             batteries = db.execute(
@@ -143,10 +123,6 @@ def dashboard(request: Request):
         except Exception:
 
             batteries = 0
-
-        # -------------------------------------------------
-        # الإطارات
-        # -------------------------------------------------
 
         try:
 
@@ -299,10 +275,6 @@ def create_equipment(
             .all()
         )
 
-        # -------------------------------------------------
-        # وثيقة الاستلام
-        # -------------------------------------------------
-
         if not receipt_document:
 
             return templates.TemplateResponse(
@@ -315,10 +287,6 @@ def create_equipment(
                 status_code=400
             )
 
-        # -------------------------------------------------
-        # رقم التسجيل
-        # -------------------------------------------------
-
         if not registration_number:
 
             return templates.TemplateResponse(
@@ -330,10 +298,6 @@ def create_equipment(
                 },
                 status_code=400
             )
-
-        # -------------------------------------------------
-        # نوع العتاد
-        # -------------------------------------------------
 
         equipment_type = (
             db.query(EquipmentType)
@@ -354,10 +318,6 @@ def create_equipment(
                 },
                 status_code=400
             )
-
-        # -------------------------------------------------
-        # منع تكرار رقم التسجيل
-        # -------------------------------------------------
 
         existing_registration = (
             db.query(Equipment)
@@ -380,10 +340,6 @@ def create_equipment(
                 status_code=400
             )
 
-        # -------------------------------------------------
-        # منع تكرار وثيقة الاستلام
-        # -------------------------------------------------
-
         existing_receipt = (
             db.query(Equipment)
             .filter(
@@ -404,10 +360,6 @@ def create_equipment(
                 },
                 status_code=400
             )
-
-        # -------------------------------------------------
-        # تحويل معدل الاستهلاك
-        # -------------------------------------------------
 
         consumption = None
 
@@ -431,6 +383,279 @@ def create_equipment(
                     status_code=400
                 )
 
-        # -------------------------------------------------
-        # إنشاء العتاد
-        #
+        equipment = Equipment(
+
+            receipt_document=receipt_document,
+
+            equipment_type_id=equipment_type_id,
+
+            model=model or None,
+
+            registration_number=registration_number,
+
+            chassis_number=chassis_number or None,
+
+            status=status or "متاحة",
+
+            department=department or None,
+
+            fuel_type=fuel_type or None,
+
+            fuel_consumption=consumption,
+
+            notes=notes or None
+
+        )
+
+        db.add(equipment)
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/equipment",
+            status_code=303
+        )
+
+    except Exception:
+
+        db.rollback()
+
+        raise
+
+    finally:
+
+        db.close()
+
+
+# =========================================================
+# إدارة أنواع العتاد
+# =========================================================
+
+@app.get("/equipment-types")
+def equipment_types_page(
+    request: Request,
+    message: str = None,
+    error: str = None
+):
+
+    db = SessionLocal()
+
+    try:
+
+        equipment_types = (
+            db.query(EquipmentType)
+            .order_by(
+                EquipmentType.name
+            )
+            .all()
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="pages/equipment_types.html",
+            context={
+                "equipment_types": equipment_types,
+                "message": message,
+                "error": error
+            }
+        )
+
+    finally:
+
+        db.close()
+
+
+# =========================================================
+# صفحة إضافة نوع عتاد
+# =========================================================
+
+@app.get("/equipment-types/new")
+def new_equipment_type_page(request: Request):
+
+    return templates.TemplateResponse(
+        request=request,
+        name="pages/equipment_type_form.html",
+        context={
+            "error": None
+        }
+    )
+
+
+# =========================================================
+# حفظ نوع العتاد
+# =========================================================
+
+@app.post("/equipment-types/new")
+def create_equipment_type(
+
+    request: Request,
+
+    name: str = Form(...),
+
+    description: str = Form("")
+
+):
+
+    db = SessionLocal()
+
+    try:
+
+        name = name.strip()
+        description = description.strip()
+
+        if not name:
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/equipment_type_form.html",
+                context={
+                    "error": "اسم نوع العتاد مطلوب."
+                },
+                status_code=400
+            )
+
+        existing = (
+            db.query(EquipmentType)
+            .filter(
+                EquipmentType.name == name
+            )
+            .first()
+        )
+
+        if existing:
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/equipment_type_form.html",
+                context={
+                    "error": "هذا النوع موجود مسبقًا."
+                },
+                status_code=400
+            )
+
+        equipment_type = EquipmentType(
+
+            name=name,
+
+            description=description or None
+
+        )
+
+        db.add(equipment_type)
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/equipment-types",
+            status_code=303
+        )
+
+    except Exception:
+
+        db.rollback()
+
+        raise
+
+    finally:
+
+        db.close()
+
+
+# =========================================================
+# حذف نوع العتاد
+# =========================================================
+
+@app.post("/equipment-types/{equipment_type_id}/delete")
+def delete_equipment_type(
+    equipment_type_id: int
+):
+
+    db = SessionLocal()
+
+    try:
+
+        equipment_type = (
+            db.query(EquipmentType)
+            .filter(
+                EquipmentType.id == equipment_type_id
+            )
+            .first()
+        )
+
+        if equipment_type is None:
+
+            return RedirectResponse(
+                url="/equipment-types?error=نوع العتاد غير موجود",
+                status_code=303
+            )
+
+        used = (
+            db.query(Equipment)
+            .filter(
+                Equipment.equipment_type_id
+                == equipment_type_id
+            )
+            .first()
+        )
+
+        if used:
+
+            return RedirectResponse(
+                url=(
+                    "/equipment-types"
+                    "?error="
+                    "لا يمكن حذف هذا النوع لأنه مرتبط بعتاد موجود"
+                ),
+                status_code=303
+            )
+
+        db.delete(equipment_type)
+
+        db.commit()
+
+        return RedirectResponse(
+            url=(
+                "/equipment-types"
+                "?message=تم حذف نوع العتاد بنجاح"
+            ),
+            status_code=303
+        )
+
+    except Exception:
+
+        db.rollback()
+
+        raise
+
+    finally:
+
+        db.close()
+
+
+# =========================================================
+# قائمة السائقين
+# =========================================================
+
+@app.get("/drivers")
+def drivers_page(request: Request):
+
+    db = SessionLocal()
+
+    try:
+
+        drivers = (
+            db.query(Driver)
+            .order_by(
+                Driver.last_name,
+                Driver.first_name
+            )
+            .all()
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="pages/drivers.html",
+            context={
+                "drivers": drivers
+            }
+    )

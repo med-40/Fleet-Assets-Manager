@@ -10,6 +10,7 @@ from app.database.session import SessionLocal
 from app.models.equipment import Equipment
 from app.models.equipment_type import EquipmentType
 from app.models.driver import Driver
+from app.models.mission import Mission
 
 
 # =========================================================
@@ -42,7 +43,7 @@ def home():
 
 
 # =========================================================
-# فحص الصحة (يستخدمه CI للتأكد أن السيرفر يعمل)
+# فحص الصحة
 # =========================================================
 
 @app.get("/health")
@@ -79,7 +80,7 @@ def dashboard(request: Request):
                 text("""
                     SELECT COUNT(*)
                     FROM missions
-                    WHERE status = 'جارية'
+                    WHERE status IN ('جارية', 'Active')
                 """)
             ).scalar() or 0
         except Exception:
@@ -173,7 +174,7 @@ def equipment_page(request: Request):
 
 
 # =========================================================
-# قائمة أنواع العتاد (JSON - يستخدمه CI)
+# قائمة أنواع العتاد
 # =========================================================
 
 @app.get("/equipment-types")
@@ -358,8 +359,7 @@ def create_equipment(
             department=department,
             fuel_type=fuel_type,
             fuel_consumption=fuel_consumption,
-            notes=notes,
-            date_added=date.today()
+            notes=notes
         )
 
         db.add(new_equipment)
@@ -367,6 +367,274 @@ def create_equipment(
 
         return RedirectResponse(
             url="/equipment",
+            status_code=303
+        )
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# المهمات
+# =========================================================
+
+@app.get("/missions")
+def missions_page(request: Request):
+
+    db = SessionLocal()
+
+    try:
+        missions = (
+            db.query(Mission)
+            .order_by(Mission.start_date.desc())
+            .all()
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="pages/missions.html",
+            context={
+                "missions": missions
+            }
+        )
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# إضافة مهمة - صفحة النموذج
+# =========================================================
+
+@app.get("/missions/new")
+def new_mission_page(request: Request):
+
+    db = SessionLocal()
+
+    try:
+
+        equipment_list = (
+            db.query(Equipment)
+            .order_by(Equipment.registration_number)
+            .all()
+        )
+
+        # =================================================
+        # مهم جدًا:
+        # لا نعرض إلا السائق الذي:
+        # 1. أكد التأهيل
+        # 2. درجته "جيد"
+        # =================================================
+
+        drivers = (
+            db.query(Driver)
+            .filter(
+                Driver.qualification_confirmed.is_(True),
+                Driver.qualification_level == "جيد"
+            )
+            .order_by(
+                Driver.first_name,
+                Driver.last_name
+            )
+            .all()
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="pages/mission_form.html",
+            context={
+                "equipment_list": equipment_list,
+                "drivers": drivers,
+                "error": None
+            }
+        )
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# إضافة مهمة - حفظ البيانات
+# =========================================================
+
+@app.post("/missions/new")
+def create_mission(
+    request: Request,
+    equipment_id: int = Form(...),
+    driver_id: int = Form(...),
+    crew_leader: str = Form(""),
+    destination: str = Form(""),
+    start_date: str = Form(...),
+    end_date: str = Form(""),
+    status: str = Form("Active"),
+    notes: str = Form("")
+):
+
+    db = SessionLocal()
+
+    try:
+
+        crew_leader = crew_leader.strip()
+        destination = destination.strip()
+        end_date = end_date.strip()
+        status = status.strip()
+        notes = notes.strip()
+
+        # =================================================
+        # إعادة تحميل السيارات والسائقين في حالة الخطأ
+        # =================================================
+
+        equipment_list = (
+            db.query(Equipment)
+            .order_by(Equipment.registration_number)
+            .all()
+        )
+
+        qualified_drivers = (
+            db.query(Driver)
+            .filter(
+                Driver.qualification_confirmed.is_(True),
+                Driver.qualification_level == "جيد"
+            )
+            .order_by(
+                Driver.first_name,
+                Driver.last_name
+            )
+            .all()
+        )
+
+        # =================================================
+        # التحقق من السيارة
+        # =================================================
+
+        equipment = (
+            db.query(Equipment)
+            .filter(
+                Equipment.id == equipment_id
+            )
+            .first()
+        )
+
+        if equipment is None:
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": "السيارة / العتاد غير موجود."
+                },
+                status_code=400
+            )
+
+        # =================================================
+        # التحقق من السائق
+        # =================================================
+
+        driver = (
+            db.query(Driver)
+            .filter(
+                Driver.id == driver_id,
+                Driver.qualification_confirmed.is_(True),
+                Driver.qualification_level == "جيد"
+            )
+            .first()
+        )
+
+        if driver is None:
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": (
+                        "لا يمكن اختيار هذا السائق. "
+                        "يجب أن يكون مؤهلًا بدرجة جيد ومؤكد التأهيل."
+                    )
+                },
+                status_code=400
+            )
+
+        # =================================================
+        # التحقق من تاريخ البداية
+        # =================================================
+
+        try:
+            parsed_start_date = date.fromisoformat(
+                start_date
+            )
+        except ValueError:
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": "تاريخ بداية المهمة غير صحيح."
+                },
+                status_code=400
+            )
+
+        # =================================================
+        # تاريخ النهاية اختياري
+        # =================================================
+
+        parsed_end_date = None
+
+        if end_date:
+
+            try:
+                parsed_end_date = date.fromisoformat(
+                    end_date
+                )
+            except ValueError:
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/mission_form.html",
+                    context={
+                        "equipment_list": equipment_list,
+                        "drivers": qualified_drivers,
+                        "error": "تاريخ نهاية المهمة غير صحيح."
+                    },
+                    status_code=400
+                )
+
+            if parsed_end_date < parsed_start_date:
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/mission_form.html",
+                    context={
+                        "equipment_list": equipment_list,
+                        "drivers": qualified_drivers,
+                        "error": (
+                            "تاريخ نهاية المهمة لا يمكن "
+                            "أن يكون قبل تاريخ البداية."
+                        )
+                    },
+                    status_code=400
+                )
+
+        # =================================================
+        # إنشاء المهمة
+        # =================================================
+
+        new_mission = Mission(
+            equipment_id=equipment_id,
+            driver_id=driver_id,
+            crew_leader=crew_leader,
+            destination=destination,
+            start_date=parsed_start_date,
+            end_date=parsed_end_date,
+            status=status,
+            notes=notes
+        )
+
+        db.add(new_mission)
+        db.commit()
+
+        return RedirectResponse(
+            url="/missions",
             status_code=303
         )
 

@@ -49,7 +49,7 @@
     table {
         width: 100%;
         border-collapse: collapse;
-        min-width: 900px;
+        min-width: 1000px;
     }
 
     th {
@@ -76,6 +76,63 @@
         border-radius: 6px;
         background: #eeeeee;
         font-size: 13px;
+    }
+
+    /* =========================================
+       رموز التأهيل
+       ========================================= */
+
+    .qualification {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 10px;
+        border-radius: 7px;
+        font-size: 13px;
+        font-weight: bold;
+    }
+
+    .qualification-dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .qualification-unqualified {
+        background: #eeeeee;
+        color: #555;
+    }
+
+    .qualification-unqualified .qualification-dot {
+        background: #777;
+    }
+
+    .qualification-bad {
+        background: #ffe5e5;
+        color: #a00000;
+    }
+
+    .qualification-bad .qualification-dot {
+        background: #dc3545;
+    }
+
+    .qualification-good {
+        background: #fff0d6;
+        color: #9a5b00;
+    }
+
+    .qualification-good .qualification-dot {
+        background: #fd7e14;
+    }
+
+    .qualification-very-good {
+        background: #e5f7ed;
+        color: #146c43;
+    }
+
+    .qualification-very-good .qualification-dot {
+        background: #198754;
     }
 
     .empty {
@@ -128,6 +185,7 @@
                 <th>رقم رخصة السياقة</th>
                 <th>تاريخ انتهاء الرخصة</th>
                 <th>الحالة</th>
+                <th>التأهيل</th>
 
             </tr>
 
@@ -168,6 +226,62 @@
                     <span class="status">
                         {{ driver.status or "-" }}
                     </span>
+
+                </td>
+
+                <td>
+
+                    {% if driver.qualification_confirmed != "نعم" %}
+
+                        <span class="qualification qualification-unqualified">
+
+                            <span class="qualification-dot"></span>
+
+                            غير مؤهل
+
+                        </span>
+
+                    {% elif driver.qualification_level == "سيئ" %}
+
+                        <span class="qualification qualification-bad">
+
+                            <span class="qualification-dot"></span>
+
+                            سيئ
+
+                        </span>
+
+                    {% elif driver.qualification_level == "حسن" %}
+
+                        <span class="qualification qualification-good">
+
+                            <span class="qualification-dot"></span>
+
+                            حسن
+
+                        </span>
+
+                    {% elif driver.qualification_level == "جيد" %}
+
+                        <span class="qualification qualification-very-good">
+
+                            <span class="qualification-dot"></span>
+
+                            جيد
+
+                        </span>
+
+                    {% else %}
+
+                        <span class="qualification qualification-unqualified">
+
+                            <span class="qualification-dot"></span>
+
+                            غير مؤهل
+
+                        </span>
+
+                    {% endif %}
 
                 </td>
 

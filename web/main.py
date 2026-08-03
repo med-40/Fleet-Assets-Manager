@@ -13,6 +13,7 @@ from app.models.equipment_type import EquipmentType
 from app.models.driver import Driver
 from app.models.mission import Mission
 from app.models.maintenance_order import MaintenanceOrder
+from app.models.workshop_transfer import WorkshopTransfer
 
 
 # =========================================================
@@ -83,7 +84,7 @@ def dashboard(request: Request):
                 text("""
                     SELECT COUNT(*)
                     FROM missions
-                    WHERE status IN ('جارية', 'Active')
+                    WHERE status IN ('جارية', 'Active', 'في مهمة')
                 """)
             ).scalar() or 0
         except Exception:
@@ -365,7 +366,11 @@ def create_equipment(
             status=status,
             department=department,
             fuel_type=fuel_type,
-            fuel_consumption=fuel_consumption,
+            fuel_consumption=(
+                float(fuel_consumption)
+                if fuel_consumption
+                else None
+            ),
             notes=notes
         )
 
@@ -544,4 +549,218 @@ def create_mission(
         if equipment.status not in available_statuses:
             return templates.TemplateResponse(
                 request=request,
-               
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": (
+                        "لا يمكن إسناد هذه السيارة إلى مهمة. "
+                        f"حالتها الحالية: "
+                        f"{equipment.status or 'غير محددة'}."
+                    )
+                },
+                status_code=400
+            )
+
+        driver = (
+            db.query(Driver)
+            .filter(
+                Driver.id == driver_id,
+                Driver.qualification_confirmed.is_(True),
+                Driver.qualification_level == "جيد"
+            )
+            .first()
+        )
+
+        if driver is None:
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": (
+                        "لا يمكن اختيار هذا السائق. "
+                        "يجب أن يكون مؤهلًا بدرجة جيد "
+                        "ومؤكد التأهيل."
+                    )
+                },
+                status_code=400
+            )
+
+        try:
+            parsed_start_date = date.fromisoformat(
+                start_date
+            )
+        except ValueError:
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": "تاريخ بداية المهمة غير صحيح."
+                },
+                status_code=400
+            )
+
+        parsed_end_date = None
+
+        if end_date:
+
+            try:
+                parsed_end_date = date.fromisoformat(
+                    end_date
+                )
+            except ValueError:
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/mission_form.html",
+                    context={
+                        "equipment_list": equipment_list,
+                        "drivers": qualified_drivers,
+                        "error": "تاريخ نهاية المهمة غير صحيح."
+                    },
+                    status_code=400
+                )
+
+            if parsed_end_date < parsed_start_date:
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/mission_form.html",
+                    context={
+                        "equipment_list": equipment_list,
+                        "drivers": qualified_drivers,
+                        "error": (
+                            "تاريخ نهاية المهمة لا يمكن "
+                            "أن يكون قبل تاريخ البداية."
+                        )
+                    },
+                    status_code=400
+                )
+
+        new_mission = Mission(
+            equipment_id=equipment_id,
+            driver_id=driver_id,
+            crew_leader=crew_leader,
+            destination=destination,
+            start_date=parsed_start_date,
+            end_date=parsed_end_date,
+            status="Active",
+            notes=notes
+        )
+
+        db.add(new_mission)
+
+        equipment.status = "في مهمة"
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/missions",
+            status_code=303
+        )
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# إنهاء المهمة
+# =========================================================
+
+@app.post("/missions/{mission_id}/complete")
+def complete_mission(mission_id: int):
+
+    db = SessionLocal()
+
+    try:
+
+        mission = (
+            db.query(Mission)
+            .filter(
+                Mission.id == mission_id
+            )
+            .first()
+        )
+
+        if mission is None:
+            return RedirectResponse(
+                url="/missions",
+                status_code=303
+            )
+
+        if mission.status in (
+            "Completed",
+            "منتهية"
+        ):
+            return RedirectResponse(
+                url="/missions",
+                status_code=303
+            )
+
+        mission.status = "Completed"
+        mission.end_date = date.today()
+
+        equipment = (
+            db.query(Equipment)
+            .filter(
+                Equipment.id == mission.equipment_id
+            )
+            .first()
+        )
+
+        if equipment is not None:
+
+            if equipment.status in (
+                "في مهمة",
+                "On Mission"
+            ):
+                equipment.status = "متاحة"
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/missions",
+            status_code=303
+        )
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# =========================================================
+# الصيانة داخل المؤسسة
+# =========================================================
+# =========================================================
+#
+# هذا القسم خاص فقط بالصيانة التي تتم داخل المؤسسة.
+#
+# أمثلة:
+# - إصلاح عطل
+# - صيانة دورية
+# - فحص
+# - تشخيص
+# - استبدال قطعة
+#
+# لا توجد هنا ورشة خارجية.
+#
+# =========================================================
+
+
+# =========================================================
+# قائمة الصيانة
+# =========================================================
+
+@app.get("/maintenance")
+def maintenance_page(request: Request):
+
+    db = SessionLocal()
+
+    try:
+
+        maintenance_orders = (
+            db.query(MaintenanceOrder)
+            .order_by(
+                Maintenance

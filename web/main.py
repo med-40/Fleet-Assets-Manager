@@ -658,4 +658,197 @@ def drivers_page(request: Request):
             context={
                 "drivers": drivers
             }
+        )
+
+    finally:
+
+        db.close()
+
+
+# =========================================================
+# صفحة إضافة سائق
+# =========================================================
+
+@app.get("/drivers/new")
+def new_driver_page(request: Request):
+
+    return templates.TemplateResponse(
+        request=request,
+        name="pages/driver_form.html",
+        context={
+            "error": None
+        }
     )
+
+
+# =========================================================
+# حفظ سائق جديد
+# =========================================================
+
+@app.post("/drivers/new")
+def create_driver(
+
+    request: Request,
+
+    first_name: str = Form(...),
+
+    last_name: str = Form(...),
+
+    rank: str = Form(""),
+
+    phone: str = Form(""),
+
+    license_number: str = Form(""),
+
+    license_expiry_date: str = Form(""),
+
+    status: str = Form("Active")
+
+):
+
+    db = SessionLocal()
+
+    try:
+
+        first_name = first_name.strip()
+        last_name = last_name.strip()
+        rank = rank.strip()
+        phone = phone.strip()
+        license_number = license_number.strip()
+        license_expiry_date = license_expiry_date.strip()
+        status = status.strip()
+
+        if not first_name:
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/driver_form.html",
+                context={
+                    "error": "الاسم مطلوب."
+                },
+                status_code=400
+            )
+
+        if not last_name:
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/driver_form.html",
+                context={
+                    "error": "اللقب مطلوب."
+                },
+                status_code=400
+            )
+
+        if license_number:
+
+            existing_license = (
+                db.query(Driver)
+                .filter(
+                    Driver.license_number
+                    == license_number
+                )
+                .first()
+            )
+
+            if existing_license:
+
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/driver_form.html",
+                    context={
+                        "error": "رقم رخصة السياقة موجود مسبقًا."
+                    },
+                    status_code=400
+                )
+
+        expiry_date = None
+
+        if license_expiry_date:
+
+            try:
+
+                expiry_date = date.fromisoformat(
+                    license_expiry_date
+                )
+
+            except ValueError:
+
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/driver_form.html",
+                    context={
+                        "error": "تاريخ انتهاء الرخصة غير صحيح."
+                    },
+                    status_code=400
+                )
+
+        driver = Driver(
+
+            first_name=first_name,
+
+            last_name=last_name,
+
+            rank=rank or None,
+
+            phone=phone or None,
+
+            license_number=license_number or None,
+
+            license_expiry_date=expiry_date,
+
+            status=status or "Active"
+
+        )
+
+        db.add(driver)
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/drivers",
+            status_code=303
+        )
+
+    except Exception:
+
+        db.rollback()
+
+        raise
+
+    finally:
+
+        db.close()
+
+
+# =========================================================
+# فحص النظام
+# =========================================================
+
+@app.get("/health")
+def health_check():
+
+    db = SessionLocal()
+
+    try:
+
+        db.execute(
+            text("SELECT 1")
+        )
+
+        return {
+            "status": "ok",
+            "database": "connected"
+        }
+
+    except Exception as error:
+
+        return {
+            "status": "error",
+            "database": "disconnected",
+            "message": str(error)
+        }
+
+    finally:
+
+        db.close()

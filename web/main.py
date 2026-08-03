@@ -760,7 +760,7 @@ def maintenance_page(request: Request):
 
     try:
 
-                maintenance_orders = (
+        maintenance_orders = (
             db.query(MaintenanceOrder)
             .order_by(
                 MaintenanceOrder.maintenance_date.desc()
@@ -945,86 +945,4 @@ def create_maintenance(
         # تغيير حالة العتاد تلقائيًا
         # -------------------------------------------------
 
-        if status == "جارية":
-
-            equipment.status = "في الصيانة"
-
-        elif status == "منتهية":
-
-            new_maintenance.completion_date = date.today()
-
-        db.commit()
-
-        return RedirectResponse(
-            url="/maintenance",
-            status_code=303
-        )
-
-    finally:
-        db.close()
-
-
-# =========================================================
-# إنهاء الصيانة الداخلية
-# =========================================================
-
-@app.post("/maintenance/{maintenance_id}/complete")
-def complete_maintenance(
-    maintenance_id: int
-):
-
-    db = SessionLocal()
-
-    try:
-
-        maintenance = (
-            db.query(MaintenanceOrder)
-            .filter(
-                MaintenanceOrder.id == maintenance_id
-            )
-            .first()
-        )
-
-        if maintenance is None:
-
-            return RedirectResponse(
-                url="/maintenance",
-                status_code=303
-            )
-
-        # إذا كانت منتهية أصلًا
-        if maintenance.status == "منتهية":
-
-            return RedirectResponse(
-                url="/maintenance",
-                status_code=303
-            )
-
-        maintenance.status = "منتهية"
-        maintenance.completion_date = date.today()
-
-        equipment = (
-            db.query(Equipment)
-            .filter(
-                Equipment.id == maintenance.equipment_id
-            )
-            .first()
-        )
-
-        if equipment is not None:
-
-            # نعيد العتاد إلى متاحة فقط
-            # إذا كان في الصيانة بسبب هذه العملية
-            if equipment.status == "في الصيانة":
-
-                equipment.status = "متاحة"
-
-        db.commit()
-
-        return RedirectResponse(
-            url="/maintenance",
-            status_code=303
-        )
-
-    finally:
-        db.close()
+        if

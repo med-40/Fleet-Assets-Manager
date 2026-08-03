@@ -24,51 +24,48 @@ class MaintenanceOrder(Base):
         nullable=False
     )
 
-    # نوع الورشة
-    workshop_type = Column(
-        String(50),
-        nullable=False,
-        default="داخل المؤسسة"
+    # نوع عملية الصيانة
+    # مثال:
+    # إصلاح عطل
+    # صيانة دورية
+    # فحص
+    # تشخيص
+    # استبدال قطعة
+    maintenance_type = Column(
+        String(100),
+        nullable=False
     )
 
-    # اسم الورشة الخارجية
-    workshop_name = Column(
-        String(200)
-    )
-
-    # سبب إرسال السيارة
-    reason = Column(
+    # وصف العمل أو العطل
+    description = Column(
         String(500)
     )
 
-    # وثيقة الإرسال
-    # وهي نفسها الوثيقة المعتمدة عند الإرجاع
-    dispatch_document = Column(
-        String(100)
-    )
-
-    # تاريخ إرسال السيارة
-    dispatch_date = Column(
+    # تاريخ بدء الصيانة
+    maintenance_date = Column(
         Date
     )
 
-    # تاريخ إرجاع السيارة
-    return_date = Column(
+    # تاريخ انتهاء الصيانة
+    completion_date = Column(
         Date
     )
 
-    # حالة العملية
+    # حالة الصيانة
+    # جارية / منتهية / ملغاة
     status = Column(
         String(50),
-        default="خارج المؤسسة"
+        default="جارية",
+        nullable=False
     )
 
-    # ملاحظات
+    # الملاحظات
     notes = Column(
         String(500)
     )
 
-    # العلاقة مع السيارة
+    # العلاقة مع العتاد
     equipment = relationship(
-        "Equipment"
+        "Equipment",
+        back_populates="maintenance_orders"
     )

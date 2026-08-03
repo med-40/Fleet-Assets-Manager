@@ -1,647 +1,304 @@
-from pathlib import Path
-
-from fastapi import FastAPI, Request, Form
-from fastapi.responses import FileResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
-from sqlalchemy import text
-
-from app.database.session import SessionLocal
-from app.models.equipment import Equipment
-from app.models.equipment_type import EquipmentType
-from app.models.driver import Driver
-
-
-# =========================================================
-# إعدادات التطبيق
-# =========================================================
+name: Web Application Test
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-INDEX_FILE = BASE_DIR / "templates" / "index.html"
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-templates = Jinja2Templates(
-    directory=str(BASE_DIR / "templates")
-)
-
-app = FastAPI(
-    title="Fleet Assets Manager",
-    description="نظام تسيير الحضيرة",
-    version="1.0.0"
-)
-
-
-# =========================================================
-# الصفحة الرئيسية
-# =========================================================
-
-@app.get("/")
-def home():
-    return FileResponse(INDEX_FILE)
-
-
-# =========================================================
-# لوحة التحكم
-# =========================================================
-
-@app.get("/dashboard")
-def dashboard(request: Request):
+jobs:
 
-    db = None
-
-    try:
-        db = SessionLocal()
+  web-test:
 
-        vehicles = db.execute(
-            text("SELECT COUNT(*) FROM equipment")
-        ).scalar() or 0
+    runs-on: ubuntu-latest
 
-        active_missions = db.execute(
-            text("""
-                SELECT COUNT(*)
-                FROM missions
-                WHERE status = 'جارية'
-            """)
-        ).scalar() or 0
-
-        due_maintenance = db.execute(
-            text("""
-                SELECT COUNT(*)
-                FROM maintenance_orders
-            """)
-        ).scalar() or 0
-
-        monthly_fuel = db.execute(
-            text("""
-                SELECT COALESCE(SUM(quantity), 0)
-                FROM fuel_logs
-            """)
-        ).scalar() or 0
-
-        batteries = db.execute(
-            text("SELECT COUNT(*) FROM batteries")
-        ).scalar() or 0
-
-        tires = db.execute(
-            text("SELECT COUNT(*) FROM tires")
-        ).scalar() or 0
-
-        return templates.TemplateResponse(
-            request=request,
-            name="pages/dashboard.html",
-            context={
-                "vehicles": vehicles,
-                "active_missions": active_missions,
-                "due_maintenance": due_maintenance,
-                "monthly_fuel": monthly_fuel,
-                "open_faults": 0,
-                "batteries": batteries,
-                "tires": tires,
-                "expiring_licenses": 0,
-            }
-        )
-
-    finally:
-        if db is not None:
-            db.close()
-
-
-# =========================================================
-# قائمة السيارات والعتاد
-# =========================================================
-
-@app.get("/equipment")
-def equipment_page(request: Request):
-
-    db = None
-
-    try:
-        db = SessionLocal()
-
-        equipment_list = (
-            db.query(Equipment)
-            .order_by(Equipment.registration_number)
-            .all()
-        )
-
-        return templates.TemplateResponse(
-            request=request,
-            name="pages/equipment.html",
-            context={
-                "equipment_list": equipment_list
-            }
-        )
-
-    finally:
-        if db is not None:
-            db.close()
-
-
-# =========================================================
-# إضافة عتاد - صفحة النموذج
-# =========================================================
-
-@app.get("/equipment/new")
-def new_equipment_page(request: Request):
-
-    db = None
-
-    try:
-        db = SessionLocal()
-
-        equipment_types = (
-            db.query(EquipmentType)
-            .order_by(EquipmentType.name)
-            .all()
-        )
-
-        return templates.TemplateResponse(
-            request=request,
-            name="pages/equipment_form.html",
-            context={
-                "equipment_types": equipment_types,
-                "error": None
-            }
-        )
-
-    finally:
-        if db is not None:
-            db.close()
-
-
-# =========================================================
-# إضافة عتاد - حفظ البيانات
-# =========================================================
-
-@app.post("/equipment/new")
-def create_equipment(
-    request: Request,
-
-    receipt_document: str = Form(...),
-    equipment_type_id: int = Form(...),
-    model: str = Form(""),
-    registration_number: str = Form(...),
-    chassis_number: str = Form(""),
-    status: str = Form("متاحة"),
-    department: str = Form(""),
-    fuel_type: str = Form(""),
-    fuel_consumption: str = Form(""),
-    notes: str = Form("")
-):
-
-    db = None
-
-    try:
-        db = SessionLocal()
-
-        # -------------------------------------------------
-        # تنظيف البيانات
-        # -------------------------------------------------
-
-        receipt_document = receipt_document.strip()
-        model = model.strip()
-        registration_number = registration_number.strip()
-        chassis_number = chassis_number.strip()
-        status = status.strip()
-        department = department.strip()
-        fuel_type = fuel_type.strip()
-        fuel_consumption = fuel_consumption.strip()
-        notes = notes.strip()
-
-        # -------------------------------------------------
-        # تحميل أنواع العتاد عند الحاجة
-        # -------------------------------------------------
-
-        def get_equipment_types():
-            return (
-                db.query(EquipmentType)
-                .order_by(EquipmentType.name)
-                .all()
-            )
-
-        # -------------------------------------------------
-        # التحقق من وثيقة الاستلام
-        # -------------------------------------------------
-
-        if not receipt_document:
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/equipment_form.html",
-                context={
-                    "equipment_types": get_equipment_types(),
-                    "error": "وثيقة الاستلام مطلوبة."
-                },
-                status_code=400
-            )
-
-        # -------------------------------------------------
-        # التحقق من نوع العتاد
-        # -------------------------------------------------
-
-        equipment_type = (
-            db.query(EquipmentType)
-            .filter(
-                EquipmentType.id == equipment_type_id
-            )
-            .first()
-        )
-
-        if equipment_type is None:
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/equipment_form.html",
-                context={
-                    "equipment_types": get_equipment_types(),
-                    "error": "نوع العتاد غير موجود."
-                },
-                status_code=400
-            )
-
-        # -------------------------------------------------
-        # التحقق من رقم التسجيل
-        # -------------------------------------------------
-
-        if not registration_number:
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/equipment_form.html",
-                context={
-                    "equipment_types": get_equipment_types(),
-                    "error": "رقم التسجيل مطلوب."
-                },
-                status_code=400
-            )
-
-        # -------------------------------------------------
-        # منع تكرار رقم التسجيل
-        # -------------------------------------------------
-
-        existing_registration = (
-            db.query(Equipment)
-            .filter(
-                Equipment.registration_number
-                == registration_number
-            )
-            .first()
-        )
-
-        if existing_registration:
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/equipment_form.html",
-                context={
-                    "equipment_types": get_equipment_types(),
-                    "error": "رقم التسجيل موجود مسبقًا."
-                },
-                status_code=400
-            )
-
-        # -------------------------------------------------
-        # منع تكرار وثيقة الاستلام
-        # -------------------------------------------------
-
-        existing_receipt = (
-            db.query(Equipment)
-            .filter(
-                Equipment.receipt_document
-                == receipt_document
-            )
-            .first()
-        )
-
-        if existing_receipt:
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/equipment_form.html",
-                context={
-                    "equipment_types": get_equipment_types(),
-                    "error": "وثيقة الاستلام موجودة مسبقًا."
-                },
-                status_code=400
-            )
-
-        # -------------------------------------------------
-        # تحويل معدل الاستهلاك
-        # -------------------------------------------------
-
-        consumption = None
-
-        if fuel_consumption:
-
-            try:
-                consumption = float(
-                    fuel_consumption.replace(",", ".")
-                )
-
-            except ValueError:
-                return templates.TemplateResponse(
-                    request=request,
-                    name="pages/equipment_form.html",
-                    context={
-                        "equipment_types": get_equipment_types(),
-                        "error": "معدل الاستهلاك يجب أن يكون رقمًا."
-                    },
-                    status_code=400
-                )
-
-        # -------------------------------------------------
-        # إنشاء العتاد
-        # -------------------------------------------------
-
-        equipment = Equipment(
-            receipt_document=receipt_document,
-            equipment_type_id=equipment_type_id,
-            model=model or None,
-            registration_number=registration_number,
-            chassis_number=chassis_number or None,
-            status=status or "متاحة",
-            department=department or None,
-            fuel_type=fuel_type or None,
-            fuel_consumption=consumption,
-            notes=notes or None
-        )
-
-        db.add(equipment)
-        db.commit()
-
-        return RedirectResponse(
-            url="/equipment",
-            status_code=303
-        )
-
-    except Exception:
-
-        if db is not None:
-            db.rollback()
-
-        raise
-
-    finally:
-
-        if db is not None:
-            db.close()
-
-
-# =========================================================
-# إدارة أنواع العتاد
-# =========================================================
-
-@app.get("/equipment-types")
-def equipment_types_page(
-    request: Request,
-    message: str = None,
-    error: str = None
-):
-
-    db = None
-
-    try:
-        db = SessionLocal()
-
-        equipment_types = (
-            db.query(EquipmentType)
-            .order_by(EquipmentType.name)
-            .all()
-        )
-
-        return templates.TemplateResponse(
-            request=request,
-            name="pages/equipment_types.html",
-            context={
-                "equipment_types": equipment_types,
-                "message": message,
-                "error": error
-            }
-        )
-
-    finally:
-
-        if db is not None:
-            db.close()
-
-
-# =========================================================
-# صفحة إضافة نوع عتاد
-# =========================================================
-
-@app.get("/equipment-types/new")
-def new_equipment_type_page(request: Request):
-
-    return templates.TemplateResponse(
-        request=request,
-        name="pages/equipment_type_form.html",
-        context={
-            "error": None
-        }
-    )
-
-
-# =========================================================
-# حفظ نوع العتاد
-# =========================================================
-
-@app.post("/equipment-types/new")
-def create_equipment_type(
-    request: Request,
-    name: str = Form(...),
-    description: str = Form("")
-):
-
-    db = None
-
-    try:
-        db = SessionLocal()
-
-        name = name.strip()
-        description = description.strip()
-
-        if not name:
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/equipment_type_form.html",
-                context={
-                    "error": "اسم نوع العتاد مطلوب."
-                },
-                status_code=400
-            )
-
-        existing = (
-            db.query(EquipmentType)
-            .filter(
-                EquipmentType.name == name
-            )
-            .first()
-        )
-
-        if existing:
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/equipment_type_form.html",
-                context={
-                    "error": "هذا النوع موجود مسبقًا."
-                },
-                status_code=400
-            )
-
-        equipment_type = EquipmentType(
-            name=name,
-            description=description or None
-        )
-
-        db.add(equipment_type)
-        db.commit()
-
-        return RedirectResponse(
-            url="/equipment-types",
-            status_code=303
-        )
-
-    except Exception:
-
-        if db is not None:
-            db.rollback()
-
-        raise
-
-    finally:
-
-        if db is not None:
-            db.close()
-
-
-# =========================================================
-# حذف نوع العتاد
-# =========================================================
-
-@app.post("/equipment-types/{equipment_type_id}/delete")
-def delete_equipment_type(
-    equipment_type_id: int
-):
-
-    db = None
-
-    try:
-        db = SessionLocal()
-
-        equipment_type = (
-            db.query(EquipmentType)
-            .filter(
-                EquipmentType.id == equipment_type_id
-            )
-            .first()
-        )
-
-        if equipment_type is None:
-            return RedirectResponse(
-                url="/equipment-types?error=نوع العتاد غير موجود",
-                status_code=303
-            )
-
-        used = (
-            db.query(Equipment)
-            .filter(
-                Equipment.equipment_type_id
-                == equipment_type_id
-            )
-            .first()
-        )
-
-        if used:
-            return RedirectResponse(
-                url=(
-                    "/equipment-types"
-                    "?error="
-                    "لا يمكن حذف هذا النوع لأنه مرتبط بعتاد موجود"
-                ),
-                status_code=303
-            )
-
-        db.delete(equipment_type)
-        db.commit()
-
-        return RedirectResponse(
-            url=(
-                "/equipment-types"
-                "?message=تم حذف نوع العتاد بنجاح"
-            ),
-            status_code=303
-        )
-
-    except Exception:
-
-        if db is not None:
-            db.rollback()
-
-        raise
-
-    finally:
-
-        if db is not None:
-            db.close()
-
-
-# =========================================================
-# قائمة السائقين
-# =========================================================
-
-@app.get("/drivers")
-def drivers_page(request: Request):
-
-    db = None
-
-    try:
-        db = SessionLocal()
-
-        drivers = (
-            db.query(Driver)
-            .order_by(
-                Driver.last_name,
-                Driver.first_name
-            )
-            .all()
-        )
-
-        return templates.TemplateResponse(
-            request=request,
-            name="pages/drivers.html",
-            context={
-                "drivers": drivers
-            }
-        )
-
-    finally:
-
-        if db is not None:
-            db.close()
-
-
-# =========================================================
-# فحص النظام
-# =========================================================
-
-@app.get("/health")
-def health_check():
-
-    db = None
-
-    try:
-        db = SessionLocal()
-
-        db.execute(text("SELECT 1"))
-
-        return {
-            "status": "ok",
-            "database": "connected"
-        }
-
-    except Exception as error:
-
-        return {
-            "status": "error",
-            "database": "disconnected",
-            "message": str(error)
-        }
-
-    finally:
-
-        if db is not None:
-            db.close()
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check Python syntax
+        run: |
+          python -m compileall app web
+
+      - name: Check FastAPI import
+        run: |
+          python -c "from web.main import app; print('FastAPI:', app.title)"
+
+      - name: Create database
+        run: |
+          python create_database.py
+
+      - name: Start FastAPI server
+        run: |
+          nohup python -m uvicorn web.main:app \
+            --host 127.0.0.1 \
+            --port 8000 \
+            > web_server.log 2>&1 &
+
+          echo $! > web_server.pid
+
+      - name: Wait for FastAPI
+        run: |
+          python - <<'PY'
+          import time
+          import urllib.request
+
+          url = "http://127.0.0.1:8000/health"
+
+          for attempt in range(30):
+
+              try:
+
+                  response = urllib.request.urlopen(
+                      url,
+                      timeout=2
+                  )
+
+                  print("FastAPI HTTP status:", response.status)
+
+                  print(
+                      response.read().decode("utf-8")
+                  )
+
+                  break
+
+              except Exception as error:
+
+                  print(
+                      f"Waiting for FastAPI... "
+                      f"{attempt + 1}/30"
+                  )
+
+                  print(error)
+
+                  time.sleep(1)
+
+          else:
+
+              print("")
+              print("===== FASTAPI LOG =====")
+
+              with open(
+                  "web_server.log",
+                  "r"
+              ) as file:
+
+                  print(file.read())
+
+              raise RuntimeError(
+                  "FastAPI server did not start"
+              )
+
+          PY
+
+      - name: Test Dashboard
+        run: |
+          python - <<'PY'
+          import urllib.request
+          import urllib.error
+
+          url = "http://127.0.0.1:8000/dashboard"
+
+          print("====================================")
+          print("TESTING DASHBOARD")
+          print("====================================")
+
+          print("Opening:", url)
+
+          try:
+
+              response = urllib.request.urlopen(
+                  url,
+                  timeout=10
+              )
+
+              content = response.read().decode(
+                  "utf-8"
+              )
+
+              print("")
+              print("Dashboard HTTP status:")
+              print(response.status)
+
+              print("")
+              print("===== DASHBOARD RESPONSE =====")
+              print(content)
+              print("===== END DASHBOARD RESPONSE =====")
+
+              if response.status != 200:
+                  raise RuntimeError(
+                      "Dashboard returned invalid status"
+                  )
+
+              print("")
+              print("Dashboard HTTP test OK")
+
+          except urllib.error.HTTPError as error:
+
+              print("")
+              print("====================================")
+              print("DASHBOARD HTTP ERROR")
+              print("====================================")
+
+              print("HTTP status:", error.code)
+
+              try:
+
+                  error_body = error.read().decode(
+                      "utf-8",
+                      errors="replace"
+                  )
+
+                  print("")
+                  print("===== ERROR RESPONSE =====")
+                  print(error_body)
+                  print("===== END ERROR RESPONSE =====")
+
+              except Exception as read_error:
+
+                  print(
+                      "Could not read error response:"
+                  )
+
+                  print(read_error)
+
+              print("")
+              print("====================================")
+              print("===== FASTAPI SERVER LOG =====")
+              print("====================================")
+
+              try:
+
+                  with open(
+                      "web_server.log",
+                      "r"
+                  ) as file:
+
+                      print(file.read())
+
+              except Exception as log_error:
+
+                  print(
+                      "Could not read FastAPI log:"
+                  )
+
+                  print(log_error)
+
+              print("====================================")
+              print("===== END FASTAPI SERVER LOG =====")
+              print("====================================")
+
+              raise
+
+          except Exception as error:
+
+              print("")
+              print("Dashboard test error:")
+              print(error)
+
+              print("")
+              print("===== FASTAPI SERVER LOG =====")
+
+              try:
+
+                  with open(
+                      "web_server.log",
+                      "r"
+                  ) as file:
+
+                      print(file.read())
+
+              except Exception as log_error:
+
+                  print(log_error)
+
+              raise
+
+          PY
+
+      - name: Test Equipment Types
+        run: |
+          python - <<'PY'
+          import urllib.request
+
+          url = "http://127.0.0.1:8000/equipment-types"
+
+          print("====================================")
+          print("TESTING EQUIPMENT TYPES")
+          print("====================================")
+
+          response = urllib.request.urlopen(
+              url,
+              timeout=10
+          )
+
+          print("HTTP status:", response.status)
+
+          print(
+              response.read().decode("utf-8")
+          )
+
+          print("Equipment Types HTTP test OK")
+
+          PY
+
+      - name: Test Drivers
+        run: |
+          python - <<'PY'
+          import urllib.request
+
+          url = "http://127.0.0.1:8000/drivers"
+
+          print("====================================")
+          print("TESTING DRIVERS")
+          print("====================================")
+
+          response = urllib.request.urlopen(
+              url,
+              timeout=10
+          )
+
+          print("HTTP status:", response.status)
+
+          print(
+              response.read().decode("utf-8")
+          )
+
+          print("Drivers HTTP test OK")
+
+          PY
+
+      - name: Show FastAPI log
+        if: always()
+        run: |
+          echo "===================================="
+          echo "===== FASTAPI SERVER LOG ====="
+          echo "===================================="
+
+          if [ -f web_server.log ]; then
+              cat web_server.log
+          else
+              echo "web_server.log does not exist"
+          fi
+
+          echo "===================================="
+          echo "===== END FASTAPI SERVER LOG ====="
+          echo "===================================="
+
+      - name: Stop FastAPI
+        if: always()
+        run: |
+          if [ -f web_server.pid ]; then
+              kill "$(cat web_server.pid)" || true
+          fi

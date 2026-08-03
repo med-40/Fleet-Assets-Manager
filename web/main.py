@@ -42,6 +42,15 @@ def home():
 
 
 # =========================================================
+# فحص الصحة (يستخدمه CI للتأكد أن السيرفر يعمل)
+# =========================================================
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+# =========================================================
 # Dashboard
 # =========================================================
 
@@ -158,6 +167,34 @@ def equipment_page(request: Request):
                 "equipment_list": equipment_list
             }
         )
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# قائمة أنواع العتاد (JSON - يستخدمه CI)
+# =========================================================
+
+@app.get("/equipment-types")
+def equipment_types_list():
+
+    db = SessionLocal()
+
+    try:
+        equipment_types = (
+            db.query(EquipmentType)
+            .order_by(EquipmentType.name)
+            .all()
+        )
+
+        return [
+            {
+                "id": equipment_type.id,
+                "name": equipment_type.name
+            }
+            for equipment_type in equipment_types
+        ]
 
     finally:
         db.close()

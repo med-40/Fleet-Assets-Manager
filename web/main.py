@@ -414,6 +414,43 @@ def missions_page(request: Request):
 
 
 # =========================================================
+# السيارات المتاحة للمهمات
+# =========================================================
+#
+# لا نسمح بإظهار:
+#
+# - في مهمة
+# - عاطلة
+# - غير متاحة
+#
+# ونسمح فقط بالحالات المتاحة.
+#
+# ندعم أيضًا "Active" باعتبارها حالة قديمة
+# مستخدمة في بعض البيانات الموجودة.
+#
+# =========================================================
+
+def get_available_equipment(db):
+
+    return (
+        db.query(Equipment)
+        .filter(
+            Equipment.status.in_(
+                [
+                    "متاحة",
+                    "Available",
+                    "Active"
+                ]
+            )
+        )
+        .order_by(
+            Equipment.registration_number
+        )
+        .all()
+    )
+
+
+# =========================================================
 # إضافة مهمة - صفحة النموذج
 # =========================================================
 
@@ -424,11 +461,8 @@ def new_mission_page(request: Request):
 
     try:
 
-        equipment_list = (
-            db.query(Equipment)
-            .order_by(Equipment.registration_number)
-            .all()
-        )
+        # السيارات المتاحة فقط
+        equipment_list = get_available_equipment(db)
 
         # السائقون المؤهلون فقط
         drivers = (
@@ -485,11 +519,15 @@ def create_mission(
         status = status.strip()
         notes = notes.strip()
 
-        equipment_list = (
-            db.query(Equipment)
-            .order_by(Equipment.registration_number)
-            .all()
-        )
+        # =================================================
+        # السيارات المتاحة فقط
+        # =================================================
+
+        equipment_list = get_available_equipment(db)
+
+        # =================================================
+        # السائقون المؤهلون فقط
+        # =================================================
 
         qualified_drivers = (
             db.query(Driver)
@@ -525,6 +563,32 @@ def create_mission(
                     "equipment_list": equipment_list,
                     "drivers": qualified_drivers,
                     "error": "السيارة / العتاد غير موجود."
+                },
+                status_code=400
+            )
+
+        # =================================================
+        # التحقق من حالة السيارة
+        # =================================================
+
+        available_statuses = (
+            "متاحة",
+            "Available",
+            "Active"
+        )
+
+        if equipment.status not in available_statuses:
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": (
+                        "لا يمكن إسناد هذه السيارة إلى مهمة. "
+                        f"حالتها الحالية: {equipment.status or 'غير محددة'}."
+                    )
                 },
                 status_code=400
             )
@@ -636,11 +700,18 @@ def create_mission(
             destination=destination,
             start_date=parsed_start_date,
             end_date=parsed_end_date,
-            status=status,
+            status="Active",
             notes=notes
         )
 
         db.add(new_mission)
+
+        # =================================================
+        # تغيير حالة السيارة تلقائيًا
+        # =================================================
+
+        equipment.status = "في مهمة"
+
         db.commit()
 
         return RedirectResponse(
@@ -656,12 +727,11 @@ def create_mission(
 # إنهاء المهمة يدويًا
 # =========================================================
 #
-# يمكن إنهاء المهمة قبل تاريخ النهاية المتوقع.
-# عند الضغط على "إنهاء المهمة":
+# عند إنهاء المهمة:
 #
-# 1. تتحول الحالة إلى Completed
-# 2. يتم تسجيل تاريخ اليوم كتاريخ النهاية الفعلي
-# 3. تبقى المهمة محفوظة في السجل
+# 1. الحالة تصبح Completed
+# 2. end_date يصبح تاريخ اليوم
+# 3. السيارة تعود إلى "متاحة"
 #
 # =========================================================
 
@@ -687,7 +757,10 @@ def complete_mission(mission_id: int):
                 status_code=303
             )
 
-        # لا نعيد إنهاء مهمة منتهية أصلًا
+        # =================================================
+        # إذا كانت المهمة منتهية أصلًا
+        # =================================================
+
         if mission.status in (
             "Completed",
             "منتهية"
@@ -699,13 +772,40 @@ def complete_mission(mission_id: int):
             )
 
         # =================================================
-        # تسجيل الإنهاء الفعلي
+        # إنهاء المهمة
         # =================================================
 
         mission.status = "Completed"
 
-        # تاريخ اليوم هو تاريخ الإنهاء الفعلي
+        # تاريخ الإنهاء الفعلي
         mission.end_date = date.today()
+
+        # =================================================
+        # إعادة السيارة إلى متاحة
+        # =================================================
+
+        equipment = (
+            db.query(Equipment)
+            .filter(
+                Equipment.id == mission.equipment_id
+            )
+            .first()
+        )
+
+        if equipment is not None:
+
+            # لا نعيد إلا السيارة التي كانت محجوزة
+            # بسبب المهمة.
+            #
+            # إذا تغيرت حالتها إلى عاطلة أو غير متاحة
+            # من مكان آخر، لا نتدخل فيها.
+
+            if equipment.status in (
+                "في مهمة",
+                "On Mission"
+            ):
+
+                equipment.status = "متاحة"
 
         db.commit()
 

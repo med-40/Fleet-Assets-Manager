@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-المهمات - نظام تسيير الحضيرة
+إضافة مهمة - نظام تسيير الحضيرة
 {% endblock %}
 
 {% block content %}
@@ -9,9 +9,6 @@
 <style>
 
     .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
         margin-bottom: 25px;
     }
 
@@ -25,92 +22,135 @@
         color: #666;
     }
 
-    .add-button {
-        display: inline-block;
-        padding: 11px 20px;
+    .form-container {
+        max-width: 850px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 25px;
+        margin: 0 auto;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group.full {
+        grid-column: 1 / -1;
+    }
+
+    label {
+        margin-bottom: 7px;
+        font-weight: bold;
+    }
+
+    input,
+    select,
+    textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 11px 12px;
+        border: 1px solid #ccc;
+        border-radius: 7px;
+        font-size: 15px;
+        background: white;
+    }
+
+    textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #198754;
+        box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.12);
+    }
+
+    .help-text {
+        margin-top: 5px;
+        font-size: 12px;
+        color: #777;
+    }
+
+    .error {
+        background: #f8d7da;
+        color: #842029;
+        border: 1px solid #f1aeb5;
+        border-radius: 7px;
+        padding: 12px;
+        margin-bottom: 20px;
+    }
+
+    .driver-preview {
+        margin-top: 7px;
+        padding: 8px 10px;
+        background: #d1e7dd;
+        color: #0f5132;
+        border-radius: 6px;
+        font-size: 13px;
+        display: none;
+    }
+
+    .button-row {
+        display: flex;
+        justify-content: flex-start;
+        gap: 10px;
+        margin-top: 25px;
+    }
+
+    .save-button {
+        border: none;
+        padding: 12px 25px;
         background: #198754;
+        color: white;
+        border-radius: 7px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 15px;
+    }
+
+    .save-button:hover {
+        background: #157347;
+    }
+
+    .cancel-button {
+        display: inline-block;
+        padding: 12px 25px;
+        background: #6c757d;
         color: white;
         text-decoration: none;
         border-radius: 7px;
         font-weight: bold;
     }
 
-    .add-button:hover {
-        background: #157347;
+    .cancel-button:hover {
+        background: #5c636a;
     }
 
-    .table-container {
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 12px;
-        overflow-x: auto;
-    }
+    @media (max-width: 700px) {
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 1100px;
-    }
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
 
-    th {
-        background: #f1f3f5;
-        font-weight: bold;
-        white-space: nowrap;
-    }
+        .form-group.full {
+            grid-column: auto;
+        }
 
-    th,
-    td {
-        padding: 13px 12px;
-        border-bottom: 1px solid #e5e5e5;
-        text-align: right;
-        white-space: nowrap;
-    }
+        .form-container {
+            padding: 18px;
+        }
 
-    tr:hover td {
-        background: #fafafa;
-    }
-
-    .status {
-        display: inline-block;
-        padding: 5px 10px;
-        border-radius: 6px;
-        font-size: 13px;
-        background: #eeeeee;
-    }
-
-    .status-active {
-        background: #d1e7dd;
-        color: #0f5132;
-    }
-
-    .status-completed {
-        background: #cfe2ff;
-        color: #084298;
-    }
-
-    .status-cancelled {
-        background: #f8d7da;
-        color: #842029;
-    }
-
-    .qualified-driver {
-        color: #146c2e;
-        font-weight: bold;
-    }
-
-    .qualification-dot {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: #198754;
-        margin-left: 5px;
-    }
-
-    .empty {
-        text-align: center;
-        padding: 50px;
-        color: #777;
     }
 
 </style>
@@ -118,226 +158,77 @@
 
 <div class="page-header">
 
-    <div>
+    <h1>
+        إضافة مهمة
+    </h1>
 
-        <h1>
-            المهمات
-        </h1>
-
-        <p>
-            قائمة المهمات المسجلة للعتاد
-        </p>
-
-    </div>
-
-    <a
-        href="/missions/new"
-        class="add-button"
-    >
-        + إضافة مهمة
-    </a>
+    <p>
+        تسجيل مهمة جديدة للعتاد
+    </p>
 
 </div>
 
 
-<div class="table-container">
+<div class="form-container">
 
-    {% if missions %}
+    {% if error %}
 
-    <table>
-
-        <thead>
-
-            <tr>
-
-                <th>السيارة / العتاد</th>
-
-                <th>السائق</th>
-
-                <th>الرتبة</th>
-
-                <th>قائد المتن</th>
-
-                <th>الوجهة</th>
-
-                <th>تاريخ البداية</th>
-
-                <th>تاريخ النهاية</th>
-
-                <th>الحالة</th>
-
-                <th>الملاحظات</th>
-
-            </tr>
-
-        </thead>
-
-
-        <tbody>
-
-            {% for mission in missions %}
-
-            <tr>
-
-
-                <!-- السيارة / العتاد -->
-
-                <td>
-
-                    {% if mission.equipment %}
-
-                        {{ mission.equipment.registration_number }}
-
-                        {% if mission.equipment.model %}
-                            — {{ mission.equipment.model }}
-                        {% endif %}
-
-                    {% else %}
-
-                        -
-
-                    {% endif %}
-
-                </td>
-
-
-                <!-- السائق -->
-
-                <td>
-
-                    {% if mission.driver %}
-
-                        <span class="qualified-driver">
-
-                            <span class="qualification-dot"></span>
-
-                            {{ mission.driver.first_name }}
-                            {{ mission.driver.last_name }}
-
-                        </span>
-
-                    {% else %}
-
-                        -
-
-                    {% endif %}
-
-                </td>
-
-
-                <!-- رتبة السائق -->
-
-                <td>
-
-                    {% if mission.driver %}
-
-                        {{ mission.driver.rank or "-" }}
-
-                    {% else %}
-
-                        -
-
-                    {% endif %}
-
-                </td>
-
-
-                <!-- قائد المتن -->
-
-                <td>
-
-                    {{ mission.crew_leader or "-" }}
-
-                </td>
-
-
-                <!-- الوجهة -->
-
-                <td>
-
-                    {{ mission.destination or "-" }}
-
-                </td>
-
-
-                <!-- تاريخ البداية -->
-
-                <td>
-
-                    {{ mission.start_date or "-" }}
-
-                </td>
-
-
-                <!-- تاريخ النهاية -->
-
-                <td>
-
-                    {{ mission.end_date or "-" }}
-
-                </td>
-
-
-                <!-- الحالة -->
-
-                <td>
-
-                    {% if mission.status == "Active" or mission.status == "جارية" %}
-
-                        <span class="status status-active">
-                            جارية
-                        </span>
-
-                    {% elif mission.status == "Completed" or mission.status == "منتهية" %}
-
-                        <span class="status status-completed">
-                            منتهية
-                        </span>
-
-                    {% elif mission.status == "Cancelled" or mission.status == "ملغاة" %}
-
-                        <span class="status status-cancelled">
-                            ملغاة
-                        </span>
-
-                    {% else %}
-
-                        <span class="status">
-                            {{ mission.status or "-" }}
-                        </span>
-
-                    {% endif %}
-
-                </td>
-
-
-                <!-- الملاحظات -->
-
-                <td>
-
-                    {{ mission.notes or "-" }}
-
-                </td>
-
-
-            </tr>
-
-            {% endfor %}
-
-        </tbody>
-
-    </table>
-
-    {% else %}
-
-    <div class="empty">
-
-        لا توجد مهمات مسجلة حاليًا.
-
-    </div>
+        <div class="error">
+            {{ error }}
+        </div>
 
     {% endif %}
 
-</div>
 
-{% endblock %}
+    <form
+        method="post"
+        action="/missions/new"
+    >
+
+        <div class="form-grid">
+
+
+            <!-- السيارة / العتاد -->
+
+            <div class="form-group full">
+
+                <label for="equipment_id">
+                    السيارة / العتاد
+                </label>
+
+                <select
+                    id="equipment_id"
+                    name="equipment_id"
+                    required
+                >
+
+                    <option value="">
+                        -- اختر السيارة / العتاد --
+                    </option>
+
+                    {% for equipment in equipment_list %}
+
+                        <option
+                            value="{{ equipment.id }}"
+                        >
+
+                            {{ equipment.registration_number }}
+
+                            {% if equipment.model %}
+                                — {{ equipment.model }}
+                            {% endif %}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <div class="help-text">
+                    ستظهر هنا السيارات التي يسمح النظام بإسنادها إلى مهمة.
+                </div>
+
+            </div>
+
+
+            <!-- السائق -->

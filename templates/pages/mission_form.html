@@ -225,10 +225,274 @@
                 </select>
 
                 <div class="help-text">
-                    ستظهر هنا السيارات التي يسمح النظام بإسنادها إلى مهمة.
+                    تظهر هنا السيارات التي يسمح النظام بإسنادها إلى مهمة.
                 </div>
 
             </div>
 
 
             <!-- السائق -->
+
+            <div class="form-group">
+
+                <label for="driver_id">
+                    السائق
+                </label>
+
+                <select
+                    id="driver_id"
+                    name="driver_id"
+                    required
+                >
+
+                    <option value="">
+                        -- اختر السائق --
+                    </option>
+
+                    {% for driver in drivers %}
+
+                        <option
+                            value="{{ driver.id }}"
+                            data-rank="{{ driver.rank or '' }}"
+                        >
+
+                            {{ driver.first_name }}
+                            {{ driver.last_name }}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <div
+                    id="driver-preview"
+                    class="driver-preview"
+                >
+                </div>
+
+                <div class="help-text">
+                    يعرض النظام فقط السائقين المؤهلين والمؤكد تأهيلهم بدرجة جيد.
+                </div>
+
+            </div>
+
+
+            <!-- قائد المتن -->
+
+            <div class="form-group">
+
+                <label for="crew_leader">
+                    قائد المتن
+                </label>
+
+                <input
+                    type="text"
+                    id="crew_leader"
+                    name="crew_leader"
+                    placeholder="اسم قائد المتن"
+                >
+
+                <div class="help-text">
+                    قائد المتن مستقل عن السائق.
+                </div>
+
+            </div>
+
+
+            <!-- الوجهة -->
+
+            <div class="form-group full">
+
+                <label for="destination">
+                    الوجهة
+                </label>
+
+                <input
+                    type="text"
+                    id="destination"
+                    name="destination"
+                    placeholder="أدخل وجهة المهمة"
+                >
+
+            </div>
+
+
+            <!-- تاريخ البداية -->
+
+            <div class="form-group">
+
+                <label for="start_date">
+                    تاريخ بداية المهمة
+                </label>
+
+                <input
+                    type="date"
+                    id="start_date"
+                    name="start_date"
+                    required
+                >
+
+            </div>
+
+
+            <!-- تاريخ النهاية -->
+
+            <div class="form-group">
+
+                <label for="end_date">
+                    تاريخ نهاية المهمة
+                </label>
+
+                <input
+                    type="date"
+                    id="end_date"
+                    name="end_date"
+                >
+
+                <div class="help-text">
+                    يمكن تركه فارغًا إذا كانت المهمة جارية.
+                </div>
+
+            </div>
+
+
+            <!-- الحالة -->
+
+            <div class="form-group">
+
+                <label for="status">
+                    الحالة
+                </label>
+
+                <select
+                    id="status"
+                    name="status"
+                >
+
+                    <option value="Active">
+                        جارية
+                    </option>
+
+                    <option value="Completed">
+                        منتهية
+                    </option>
+
+                    <option value="Cancelled">
+                        ملغاة
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- الملاحظات -->
+
+            <div class="form-group full">
+
+                <label for="notes">
+                    الملاحظات
+                </label>
+
+                <textarea
+                    id="notes"
+                    name="notes"
+                    placeholder="ملاحظات إضافية..."
+                ></textarea>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- الأزرار -->
+
+        <div class="button-row">
+
+            <button
+                type="submit"
+                class="save-button"
+            >
+                حفظ المهمة
+            </button>
+
+            <a
+                href="/missions"
+                class="cancel-button"
+            >
+                إلغاء
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<script>
+
+    const driverSelect =
+        document.getElementById("driver_id");
+
+    const driverPreview =
+        document.getElementById("driver-preview");
+
+
+    driverSelect.addEventListener(
+        "change",
+        function () {
+
+            const selected =
+                this.options[this.selectedIndex];
+
+            if (!selected.value) {
+
+                driverPreview.style.display = "none";
+                driverPreview.textContent = "";
+
+                return;
+            }
+
+            const rank =
+                selected.dataset.rank || "بدون رتبة";
+
+            driverPreview.textContent =
+                "الرتبة: " + rank;
+
+            driverPreview.style.display = "block";
+
+        }
+    );
+
+
+    const startDate =
+        document.getElementById("start_date");
+
+    const endDate =
+        document.getElementById("end_date");
+
+
+    startDate.addEventListener(
+        "change",
+        function () {
+
+            endDate.min = this.value;
+
+            if (
+                endDate.value &&
+                endDate.value < this.value
+            ) {
+
+                endDate.value = "";
+
+            }
+
+        }
+    );
+
+</script>
+
+{% endblock %}

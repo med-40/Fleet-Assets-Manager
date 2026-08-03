@@ -6,45 +6,48 @@ from sqlalchemy import String
 
 from app.database.base import Base
 
-
 class Mission(Base):
 
-    __tablename__ = "missions"
+__tablename__ = "missions"
 
-    id = Column(
-        Integer,
-        primary_key=True
-    )
+id = Column(
+    Integer,
+    primary_key=True
+)
 
-    equipment_id = Column(
-        Integer,
-        ForeignKey("equipment.id"),
-        nullable=False
-    )
+equipment_id = Column(
+    Integer,
+    ForeignKey("equipment.id"),
+    nullable=False
+)
 
-    driver_id = Column(
-        Integer,
-        ForeignKey("drivers.id")
-    )
+driver_id = Column(
+    Integer,
+    ForeignKey("drivers.id")
+)
 
-    destination = Column(
-        String(200)
-    )
+crew_leader = Column(
+    String(200)
+)
 
-    start_date = Column(
-        Date,
-        nullable=False
-    )
+destination = Column(
+    String(200)
+)
 
-    end_date = Column(
-        Date
-    )
+start_date = Column(
+    Date,
+    nullable=False
+)
 
-    status = Column(
-        String(50),
-        default="Active"
-    )
+end_date = Column(
+    Date
+)
 
-    notes = Column(
-        String(500)
-    )
+status = Column(
+    String(50),
+    default="Active"
+)
+
+notes = Column(
+    String(500)
+)

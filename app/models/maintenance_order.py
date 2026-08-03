@@ -1,8 +1,8 @@
 from sqlalchemy import Column
+from sqlalchemy import Date
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
-from sqlalchemy import Date
 from sqlalchemy.orm import relationship
 
 from app.database.base import Base
@@ -17,7 +17,7 @@ class MaintenanceOrder(Base):
         primary_key=True
     )
 
-    # السيارة
+    # السيارة / العتاد
     equipment_id = Column(
         Integer,
         ForeignKey("equipment.id"),
@@ -41,7 +41,8 @@ class MaintenanceOrder(Base):
         String(500)
     )
 
-    # وثيقة إرسال السيارة إلى الورشة
+    # وثيقة الإرسال
+    # وهي نفسها الوثيقة المعتمدة عند الإرجاع
     dispatch_document = Column(
         String(100)
     )
@@ -49,11 +50,6 @@ class MaintenanceOrder(Base):
     # تاريخ إرسال السيارة
     dispatch_date = Column(
         Date
-    )
-
-    # وثيقة إرجاع السيارة
-    return_document = Column(
-        String(100)
     )
 
     # تاريخ إرجاع السيارة

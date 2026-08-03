@@ -1,8 +1,8 @@
 from sqlalchemy import Column
-from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import Float
 from sqlalchemy.orm import relationship
 
 from app.database.base import Base
@@ -49,7 +49,7 @@ class Equipment(Base):
         unique=True
     )
 
-    # الحالة الحالية للعتاد
+    # الحالة
     status = Column(
         String(50),
         default="متاحة"
@@ -75,23 +75,25 @@ class Equipment(Base):
         String(500)
     )
 
-    # =====================================================
-    # العلاقات
-    # =====================================================
-
-    # نوع العتاد
+    # العلاقة مع نوع العتاد
     equipment_type = relationship(
         "EquipmentType"
     )
 
-    # الصيانة داخل المؤسسة
+    # =====================================================
+    # الصيانة الداخلية
+    # =====================================================
+
     maintenance_orders = relationship(
         "MaintenanceOrder",
         back_populates="equipment",
         cascade="all, delete-orphan"
     )
 
-    # تحويلات الورشات الخارجية
+    # =====================================================
+    # الورشات الخارجية
+    # =====================================================
+
     workshop_transfers = relationship(
         "WorkshopTransfer",
         back_populates="equipment",

@@ -80,7 +80,6 @@
         margin-top: 5px;
         font-size: 12px;
         color: #777;
-        line-height: 1.6;
     }
 
     .error {
@@ -140,6 +139,28 @@
         background: #5c636a;
     }
 
+    .schedule-info {
+        margin-top: 12px;
+        padding: 12px;
+        background: #e9f7ef;
+        border: 1px solid #badbcc;
+        border-radius: 7px;
+        color: #155724;
+        display: none;
+    }
+
+    .schedule-info strong {
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .no-schedule {
+        margin-top: 8px;
+        color: #842029;
+        font-size: 13px;
+        display: none;
+    }
+
     @media (max-width: 700px) {
 
         .form-grid {
@@ -154,15 +175,6 @@
             padding: 18px;
         }
 
-        .button-row {
-            flex-direction: column;
-        }
-
-        .save-button,
-        .cancel-button {
-            text-align: center;
-        }
-
     }
 
 </style><div class="page-header"><h1>
@@ -175,9 +187,9 @@
 
 </div><div class="form-container">{% if error %}
 
-    <div class="error">
-        {{ error }}
-    </div>
+<div class="error">
+    {{ error }}
+</div>
 
 {% endif %}
 
@@ -185,6 +197,7 @@
 <form
     method="post"
     action="/maintenance/new"
+    id="maintenanceForm"
 >
 
     <div class="form-grid">
@@ -216,19 +229,32 @@
 
                 {% for equipment in equipment_list %}
 
-                    <option value="{{ equipment.id }}">
+                <option
+                    value="{{ equipment.id }}"
+                >
 
-                        {{ equipment.registration_number }}
+                    {{ equipment.registration_number }}
 
-                        {% if equipment.model %}
-                            — {{ equipment.model }}
-                        {% endif %}
+                    {% if equipment.model %}
+                        — {{ equipment.model }}
+                    {% endif %}
 
-                    </option>
+                    {% if equipment.receipt_document %}
+                        — وثيقة الاستلام: {{ equipment.receipt_document }}
+                    {% endif %}
+
+                </option>
 
                 {% endfor %}
 
             </select>
+
+            <div class="help-text">
+
+                اختر العتاد أولًا، وسيتم عرض خطط الصيانة
+                المعرفة لهذا العتاد فقط.
+
+            </div>
 
         </div>
 
@@ -241,7 +267,7 @@
 
             <label for="maintenance_schedule_id">
 
-                عملية / خطة الصيانة
+                خطة / عملية الصيانة
 
             </label>
 
@@ -251,34 +277,56 @@
             >
 
                 <option value="">
-                    -- صيانة طارئة / غير مرتبطة بخطة --
+                    -- اختر العتاد أولًا --
                 </option>
 
                 {% for schedule in maintenance_schedules %}
 
-                    <option value="{{ schedule.id }}">
+                <option
+                    value="{{ schedule.id }}"
+                    data-equipment-id="{{ schedule.equipment_id }}"
+                    data-interval-km="{{ schedule.interval_km or '' }}"
+                    data-interval-days="{{ schedule.interval_days or '' }}"
+                    data-description="{{ schedule.description or '' }}"
+                >
 
-                        {{ schedule.name }}
+                    {{ schedule.name }}
 
-                        {% if schedule.interval_km %}
-                            — كل {{ schedule.interval_km }} كم
-                        {% endif %}
-
-                        {% if schedule.interval_days %}
-                            — كل {{ schedule.interval_days }} يوم
-                        {% endif %}
-
-                    </option>
+                </option>
 
                 {% endfor %}
 
             </select>
 
+
             <div class="help-text">
 
-                اختر خطة الصيانة المبرمجة إذا كانت العملية مرتبطة
-                بخطة صيانة للعتاد. إذا كانت العملية طارئة،
-                اترك الاختيار فارغًا.
+                بعد اختيار العتاد، تظهر هنا خطط الصيانة
+                الخاصة به فقط.
+
+            </div>
+
+
+            <div
+                id="scheduleInfo"
+                class="schedule-info"
+            >
+
+                <strong>
+                    معلومات خطة الصيانة
+                </strong>
+
+                <span id="scheduleDetails"></span>
+
+            </div>
+
+
+            <div
+                id="noScheduleMessage"
+                class="no-schedule"
+            >
+
+                لا توجد خطة صيانة معرفة لهذا العتاد.
 
             </div>
 
@@ -308,7 +356,7 @@
 
             <div class="help-text">
 
-                عند انتهاء الصيانة، تُعتمد هذه القراءة
+                عند انتهاء الصيانة يتم اعتماد هذه القراءة
                 لتحديث الاستحقاق القادم حسب الكيلومترات.
 
             </div>
@@ -463,4 +511,235 @@
 
 </form>
 
-</div>{% endblock %}
+</div><script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const equipmentSelect =
+        document.getElementById("equipment_id");
+
+    const scheduleSelect =
+        document.getElementById("maintenance_schedule_id");
+
+    const scheduleInfo =
+        document.getElementById("scheduleInfo");
+
+    const scheduleDetails =
+        document.getElementById("scheduleDetails");
+
+    const noScheduleMessage =
+        document.getElementById("noScheduleMessage");
+
+
+    /*
+    =====================================================
+    عند تغيير العتاد
+    =====================================================
+    */
+
+    equipmentSelect.addEventListener(
+        "change",
+        function () {
+
+            const equipmentId =
+                this.value;
+
+            /*
+            إعادة القائمة إلى حالتها الأساسية
+            */
+
+            scheduleSelect.innerHTML = "";
+
+            const defaultOption =
+                document.createElement("option");
+
+            defaultOption.value = "";
+            defaultOption.textContent =
+                equipmentId
+                    ? "-- اختر خطة الصيانة --"
+                    : "-- اختر العتاد أولًا --";
+
+            scheduleSelect.appendChild(
+                defaultOption
+            );
+
+
+            /*
+            إخفاء المعلومات السابقة
+            */
+
+            scheduleInfo.style.display =
+                "none";
+
+            noScheduleMessage.style.display =
+                "none";
+
+
+            /*
+            إذا لم يتم اختيار عتاد
+            */
+
+            if (!equipmentId) {
+
+                return;
+
+            }
+
+
+            /*
+            البحث عن خطط الصيانة
+            الخاصة بالعتاد المختار فقط
+            */
+
+            const allSchedules =
+                document.querySelectorAll(
+                    "#maintenance_schedule_id option[data-equipment-id]"
+                );
+
+            let scheduleCount = 0;
+
+
+            allSchedules.forEach(
+                function (option) {
+
+                    const optionEquipmentId =
+                        option.getAttribute(
+                            "data-equipment-id"
+                        );
+
+                    if (
+                        optionEquipmentId === equipmentId
+                    ) {
+
+                        const newOption =
+                            option.cloneNode(true);
+
+                        scheduleSelect.appendChild(
+                            newOption
+                        );
+
+                        scheduleCount++;
+
+                    }
+
+                }
+            );
+
+
+            /*
+            لا توجد خطط
+            */
+
+            if (scheduleCount === 0) {
+
+                noScheduleMessage.style.display =
+                    "block";
+
+            }
+
+        }
+    );
+
+
+    /*
+    =====================================================
+    عند اختيار خطة صيانة
+    =====================================================
+    */
+
+    scheduleSelect.addEventListener(
+        "change",
+        function () {
+
+            const selectedOption =
+                this.options[this.selectedIndex];
+
+
+            if (
+                !this.value ||
+                !selectedOption
+            ) {
+
+                scheduleInfo.style.display =
+                    "none";
+
+                return;
+
+            }
+
+
+            const intervalKm =
+                selectedOption.getAttribute(
+                    "data-interval-km"
+                );
+
+            const intervalDays =
+                selectedOption.getAttribute(
+                    "data-interval-days"
+                );
+
+            const description =
+                selectedOption.getAttribute(
+                    "data-description"
+                );
+
+
+            let details = "";
+
+
+            if (intervalKm) {
+
+                details +=
+                    "كل " +
+                    intervalKm +
+                    " كم";
+
+            }
+
+
+            if (intervalDays) {
+
+                if (details) {
+
+                    details +=
+                        " — ";
+
+                }
+
+                details +=
+                    "كل " +
+                    intervalDays +
+                    " يوم";
+
+            }
+
+
+            if (!details) {
+
+                details =
+                    "لا يوجد شرط زمني أو كيلومتري محدد.";
+
+            }
+
+
+            if (description) {
+
+                details +=
+                    "<br>" +
+                    description;
+
+            }
+
+
+            scheduleDetails.innerHTML =
+                details;
+
+            scheduleInfo.style.display =
+                "block";
+
+        }
+    );
+
+});
+
+</script>{% endblock %}

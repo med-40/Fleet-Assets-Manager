@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}
+خطط الصيانة - نظام تسيير الحضيرة
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        gap: 20px;
+    }
+
+    .page-header h1 {
+        margin: 0;
+        font-size: 30px;
+    }
+
+    .page-header p {
+        margin: 8px 0 0;
+        color: #666;
+    }
+
+    .add-button {
+        display: inline-block;
+        padding: 11px 20px;
+        background: #198754;
+        color: white;
+        text-decoration: none;
+        border-radius: 7px;
+        font-weight: bold;
+    }
+
+    .add-button:hover {
+        background: #157347;
+    }
+
+    .table-container {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1200px;
+    }
+
+    th {
+        background: #f1f3f5;
+        font-weight: bold;
+        white-space: nowrap;
+    }
+
+    th,
+    td {
+        padding: 13px 12px;
+        border-bottom: 1px solid #e5e5e5;
+        text-align: right;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    tr:hover td {
+        background: #fafafa;
+    }
+
+    .equipment {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .schedule-name {
+        font-weight: bold;
+        color: #0d6efd;
+    }
+
+    .condition {
+        display: inline-block;
+        padding: 5px 9px;
+        border-radius: 6px;
+        background: #e9ecef;
+        color: #495057;
+        font-size: 13px;
+    }
+
+    .due {
+        background: #fff3cd;
+        color: #664d03;
+    }
+
+    .empty {
+        text-align: center;
+        padding: 50px;
+        color: #777;
+    }
+
+    .action-button {
+        display: inline-block;
+        padding: 7px 12px;
+        background: #0d6efd;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 13px;
+    }
+
+    .action-button:hover {
+        background: #0b5ed7;
+    }
+
+    @media (max-width: 700px) {
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+    }
+
+</style><div class="page-header"><div>
+
+    <h1>
+        خطط الصيانة
+    </h1>
+
+    <p>
+        تعريف ومتابعة الصيانة الدورية لكل عتاد
+    </p>
+
+</div>
+
+<a
+    href="/maintenance-schedules/new"
+    class="add-button"
+>
+    + إضافة خطة صيانة
+</a>
+
+</div><div class="table-container">{% if maintenance_schedules %}
+
+<table>
+
+    <thead>
+
+        <tr>
+
+            <th>
+                السيارة / العتاد
+            </th>
+
+            <th>
+                عملية الصيانة
+            </th>
+
+            <th>
+                شرط العداد
+            </th>
+
+            <th>
+                شرط الأيام
+            </th>
+
+            <th>
+                آخر تنفيذ
+            </th>
+
+            <th>
+                آخر عداد
+            </th>
+
+            <th>
+                الاستحقاق القادم
+            </th>
+
+            <th>
+                العداد القادم
+            </th>
+
+            <th>
+                الوصف
+            </th>
+
+            <th>
+                الإجراء
+            </th>
+
+        </tr>
+
+    </thead>
+
+
+    <tbody>
+
+        {% for schedule in maintenance_schedules %}
+
+        <tr>
+
+
+            <!-- ========================================= -->
+            <!-- العتاد -->
+            <!-- ========================================= -->
+
+            <td>
+
+                {% if schedule.equipment %}
+
+                    <span class="equipment">
+
+                        {{ schedule.equipment.registration_number }}
+
+                    </span>
+
+                    {% if schedule.equipment.model %}
+
+                        — {{ schedule.equipment.model }}
+
+                    {% endif %}
+
+                {% else %}
+
+                    -
+
+                {% endif %}
+
+            </td>
+
+
+            <!-- ========================================= -->
+            <!-- اسم العملية -->
+            <!-- ========================================= -->
+
+            <td>
+
+                <span class="schedule-name">
+
+                    {{ schedule.name }}
+
+                </span>
+
+            </td>
+
+
+            <!-- ========================================= -->
+            <!-- شرط العداد -->
+            <!-- ========================================= -->
+
+            <td>
+
+                {% if schedule.interval_km %}
+
+                    <span class="condition">
+
+                        كل {{ schedule.interval_km }} كم
+
+                    </span>
+
+                {% else %}
+
+                    -
+
+                {% endif %}
+
+            </td>
+
+
+            <!-- ========================================= -->
+            <!-- شرط الأيام -->
+            <!-- ========================================= -->
+
+            <td>
+
+                {% if schedule.interval_days %}
+
+                    <span class="condition">
+
+                        كل {{ schedule.interval_days }} يوم
+
+                    </span>
+
+                {% else %}
+
+                    -
+
+                {% endif %}
+
+            </td>
+
+
+            <!-- ========================================= -->
+            <!-- آخر تنفيذ -->
+            <!-- ========================================= -->
+
+            <td>
+
+                {{ schedule.last_maintenance_date or "-" }}
+
+            </td>
+
+
+            <!-- ========================================= -->
+            <!-- آخر قراءة -->
+            <!-- ========================================= -->
+
+            <td>
+
+                {% if schedule.last_maintenance_meter is not none %}
+
+                    {{ schedule.last_maintenance_meter }} كم
+
+                {% else %}
+
+                    -
+
+                {% endif %}
+
+            </td>
+
+
+            <!-- ========================================= -->
+            <!-- الاستحقاق القادم حسب التاريخ -->
+            <!-- ========================================= -->
+
+            <td>
+
+                {% if schedule.next_due_date %}
+
+                    <span class="condition due">
+
+                        {{ schedule.next_due_date }}
+
+                    </span>
+
+                {% else %}
+
+                    -
+
+                {% endif %}
+
+            </td>
+
+
+            <!-- ========================================= -->
+            <!-- الاستحقاق القادم حسب العداد -->
+            <!-- ========================================= -->
+
+            <td>
+
+                {% if schedule.next_due_meter is not none %}
+
+                    <span class="condition due">
+
+                        {{ schedule.next_due_meter }} كم
+
+                    </span>
+
+                {% else %}
+
+                    -
+
+                {% endif %}
+
+            </td>
+
+
+            <!-- ========================================= -->
+            <!-- الوصف -->
+            <!-- ========================================= -->
+
+            <td>
+
+                {{ schedule.description or "-" }}
+
+            </td>
+
+
+            <!-- ========================================= -->
+            <!-- الإجراء -->
+            <!-- ========================================= -->
+
+            <td>
+
+                <a
+                    href="/maintenance-schedules/{{ schedule.id }}/edit"
+                    class="action-button"
+                >
+                    تعديل
+                </a>
+
+            </td>
+
+
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% else %}
+
+<div class="empty">
+
+    لا توجد خطط صيانة مسجلة حاليًا.
+
+    <br><br>
+
+    يمكنك إنشاء أول خطة من زر
+    <strong>إضافة خطة صيانة</strong>.
+
+</div>
+
+{% endif %}
+
+</div>{% endblock %}

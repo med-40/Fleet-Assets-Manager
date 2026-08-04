@@ -91,12 +91,62 @@
         margin-bottom: 20px;
     }
 
-    .meter-box,
+    .meter-box {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+    }
+
     .maintenance-type-box {
         background: #f8f9fa;
         border: 1px solid #dee2e6;
         border-radius: 8px;
         padding: 15px;
+    }
+
+    .schedule-info {
+        margin-top: 12px;
+        padding: 12px;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 7px;
+        display: none;
+    }
+
+    .schedule-info-row {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        font-size: 13px;
+        color: #555;
+    }
+
+    .schedule-info-item {
+        padding: 5px 0;
+    }
+
+    .schedule-description {
+        margin-top: 8px;
+        color: #666;
+        font-size: 13px;
+    }
+
+    .loading {
+        color: #666;
+        font-size: 13px;
+        margin-top: 7px;
+        display: none;
+    }
+
+    .no-schedules {
+        color: #842029;
+        background: #f8d7da;
+        border: 1px solid #f1aeb5;
+        padding: 9px;
+        border-radius: 6px;
+        margin-top: 8px;
+        display: none;
     }
 
     .required {
@@ -125,6 +175,11 @@
         background: #157347;
     }
 
+    .save-button:disabled {
+        background: #adb5bd;
+        cursor: not-allowed;
+    }
+
     .cancel-button {
         display: inline-block;
         padding: 12px 25px;
@@ -137,28 +192,6 @@
 
     .cancel-button:hover {
         background: #5c636a;
-    }
-
-    .schedule-info {
-        margin-top: 12px;
-        padding: 12px;
-        background: #e9f7ef;
-        border: 1px solid #badbcc;
-        border-radius: 7px;
-        color: #155724;
-        display: none;
-    }
-
-    .schedule-info strong {
-        display: block;
-        margin-bottom: 5px;
-    }
-
-    .no-schedule {
-        margin-top: 8px;
-        color: #842029;
-        font-size: 13px;
-        display: none;
     }
 
     @media (max-width: 700px) {
@@ -177,407 +210,576 @@
 
     }
 
-</style><div class="page-header"><h1>
-    إضافة صيانة داخلية
-</h1>
+</style>
 
-<p>
-    تسجيل عملية صيانة أو إصلاح للعتاد داخل المؤسسة
-</p>
 
-</div><div class="form-container">{% if error %}
+<div class="page-header">
 
-<div class="error">
-    {{ error }}
+    <h1>
+        إضافة صيانة داخلية
+    </h1>
+
+    <p>
+        تسجيل عملية صيانة أو إصلاح للعتاد داخل المؤسسة
+    </p>
+
 </div>
 
-{% endif %}
+
+<div class="form-container">
+
+    {% if error %}
+
+        <div class="error">
+            {{ error }}
+        </div>
+
+    {% endif %}
 
 
-<form
-    method="post"
-    action="/maintenance/new"
-    id="maintenanceForm"
->
+    <form
+        method="post"
+        action="/maintenance/new"
+        id="maintenanceForm"
+    >
 
-    <div class="form-grid">
+        <div class="form-grid">
 
 
-        <!-- ========================================= -->
-        <!-- العتاد -->
-        <!-- ========================================= -->
+            <!-- =============================================== -->
+            <!-- العتاد -->
+            <!-- =============================================== -->
 
-        <div class="form-group full">
+            <div class="form-group full">
 
-            <label for="equipment_id">
+                <label for="equipment_id">
 
-                السيارة / العتاد
+                    السيارة / العتاد
 
-                <span class="required">*</span>
+                    <span class="required">*</span>
 
-            </label>
+                </label>
 
-            <select
-                id="equipment_id"
-                name="equipment_id"
-                required
-            >
-
-                <option value="">
-                    -- اختر السيارة / العتاد --
-                </option>
-
-                {% for equipment in equipment_list %}
-
-                <option
-                    value="{{ equipment.id }}"
+                <select
+                    id="equipment_id"
+                    name="equipment_id"
+                    required
                 >
 
-                    {{ equipment.registration_number }}
+                    <option value="">
+                        -- اختر السيارة / العتاد --
+                    </option>
 
-                    {% if equipment.model %}
-                        — {{ equipment.model }}
-                    {% endif %}
+                    {% for equipment in equipment_list %}
 
-                    {% if equipment.receipt_document %}
-                        — وثيقة الاستلام: {{ equipment.receipt_document }}
-                    {% endif %}
+                        <option value="{{ equipment.id }}">
 
-                </option>
+                            {{ equipment.registration_number }}
 
-                {% endfor %}
+                            {% if equipment.model %}
+                                — {{ equipment.model }}
+                            {% endif %}
 
-            </select>
+                        </option>
 
-            <div class="help-text">
+                    {% endfor %}
 
-                اختر العتاد أولًا، وسيتم عرض خطط الصيانة
-                المعرفة لهذا العتاد فقط.
+                </select>
+
+                <div
+                    id="scheduleLoading"
+                    class="loading"
+                >
+                    جاري تحميل خطط الصيانة الخاصة بهذا العتاد...
+                </div>
+
+                <div
+                    id="noSchedules"
+                    class="no-schedules"
+                >
+                    لا توجد خطط صيانة معرفة لهذا العتاد.
+                </div>
 
             </div>
 
-        </div>
 
+            <!-- =============================================== -->
+            <!-- خطة الصيانة -->
+            <!-- =============================================== -->
 
-        <!-- ========================================= -->
-        <!-- خطة الصيانة -->
-        <!-- ========================================= -->
-
-        <div class="form-group full maintenance-type-box">
-
-            <label for="maintenance_schedule_id">
-
-                خطة / عملية الصيانة
-
-            </label>
-
-            <select
-                id="maintenance_schedule_id"
-                name="maintenance_schedule_id"
+            <div
+                class="form-group full maintenance-type-box"
             >
 
-                <option value="">
-                    -- اختر العتاد أولًا --
-                </option>
+                <label for="maintenance_schedule_id">
 
-                {% for schedule in maintenance_schedules %}
+                    خطة / عملية الصيانة
 
-                <option
-                    value="{{ schedule.id }}"
-                    data-equipment-id="{{ schedule.equipment_id }}"
-                    data-interval-km="{{ schedule.interval_km or '' }}"
-                    data-interval-days="{{ schedule.interval_days or '' }}"
-                    data-description="{{ schedule.description or '' }}"
+                    <span class="required">*</span>
+
+                </label>
+
+                <select
+                    id="maintenance_schedule_id"
+                    name="maintenance_schedule_id"
+                    required
+                    disabled
                 >
 
-                    {{ schedule.name }}
+                    <option value="">
+                        -- اختر العتاد أولًا --
+                    </option>
 
-                </option>
-
-                {% endfor %}
-
-            </select>
+                </select>
 
 
-            <div class="help-text">
+                <div class="help-text">
 
-                بعد اختيار العتاد، تظهر هنا خطط الصيانة
-                الخاصة به فقط.
+                    تظهر هنا فقط خطط الصيانة المرتبطة بالعتاد
+                    الذي اخترته.
+
+                </div>
+
+
+                <!-- معلومات الخطة -->
+
+                <div
+                    id="scheduleInfo"
+                    class="schedule-info"
+                >
+
+                    <div class="schedule-info-row">
+
+                        <div class="schedule-info-item">
+
+                            <strong>
+                                كل:
+                            </strong>
+
+                            <span id="intervalKm">
+                                —
+                            </span>
+
+                        </div>
+
+
+                        <div class="schedule-info-item">
+
+                            <strong>
+                                زمنيًا:
+                            </strong>
+
+                            <span id="intervalDays">
+                                —
+                            </span>
+
+                        </div>
+
+
+                        <div class="schedule-info-item">
+
+                            <strong>
+                                آخر تنفيذ:
+                            </strong>
+
+                            <span id="lastMaintenance">
+                                —
+                            </span>
+
+                        </div>
+
+
+                        <div class="schedule-info-item">
+
+                            <strong>
+                                الاستحقاق القادم:
+                            </strong>
+
+                            <span id="nextDue">
+                                —
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="scheduleDescription"
+                        class="schedule-description"
+                    ></div>
+
+                </div>
 
             </div>
 
 
-            <div
-                id="scheduleInfo"
-                class="schedule-info"
-            >
+            <!-- =============================================== -->
+            <!-- قراءة العداد -->
+            <!-- =============================================== -->
 
-                <strong>
-                    معلومات خطة الصيانة
-                </strong>
+            <div class="form-group full meter-box">
 
-                <span id="scheduleDetails"></span>
+                <label for="meter_reading">
+
+                    قراءة العداد الحالية بالكيلومتر
+
+                </label>
+
+                <input
+                    type="number"
+                    id="meter_reading"
+                    name="meter_reading"
+                    min="0"
+                    step="1"
+                    placeholder="مثال: 52430"
+                >
+
+                <div class="help-text">
+
+                    عند انتهاء الصيانة يتم اعتماد هذه القراءة
+                    لتحديث الاستحقاق القادم حسب الكيلومترات.
+
+                </div>
+
+            </div>
+
+
+            <!-- =============================================== -->
+            <!-- وصف العمل -->
+            <!-- =============================================== -->
+
+            <div class="form-group full">
+
+                <label for="description">
+
+                    وصف العمل أو العطل
+
+                </label>
+
+                <textarea
+                    id="description"
+                    name="description"
+                    placeholder="تفاصيل العمل المنجز أو وصف العطل..."
+                ></textarea>
 
             </div>
 
 
-            <div
-                id="noScheduleMessage"
-                class="no-schedule"
-            >
+            <!-- =============================================== -->
+            <!-- تاريخ بداية الصيانة -->
+            <!-- =============================================== -->
 
-                لا توجد خطة صيانة معرفة لهذا العتاد.
+            <div class="form-group">
+
+                <label for="maintenance_date">
+
+                    تاريخ بداية الصيانة
+
+                </label>
+
+                <input
+                    type="date"
+                    id="maintenance_date"
+                    name="maintenance_date"
+                >
+
+            </div>
+
+
+            <!-- =============================================== -->
+            <!-- تاريخ انتهاء الصيانة -->
+            <!-- =============================================== -->
+
+            <div class="form-group">
+
+                <label for="completion_date">
+
+                    تاريخ انتهاء الصيانة
+
+                </label>
+
+                <input
+                    type="date"
+                    id="completion_date"
+                    name="completion_date"
+                >
+
+            </div>
+
+
+            <!-- =============================================== -->
+            <!-- حالة الصيانة -->
+            <!-- =============================================== -->
+
+            <div class="form-group">
+
+                <label for="status">
+
+                    حالة الصيانة
+
+                    <span class="required">*</span>
+
+                </label>
+
+                <select
+                    id="status"
+                    name="status"
+                    required
+                >
+
+                    <option value="جارية">
+                        جارية
+                    </option>
+
+                    <option value="منتهية">
+                        منتهية
+                    </option>
+
+                    <option value="ملغاة">
+                        ملغاة
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- =============================================== -->
+            <!-- الملاحظات -->
+            <!-- =============================================== -->
+
+            <div class="form-group full">
+
+                <label for="notes">
+
+                    ملاحظات
+
+                </label>
+
+                <textarea
+                    id="notes"
+                    name="notes"
+                    placeholder="أي ملاحظات إضافية..."
+                ></textarea>
 
             </div>
 
         </div>
 
 
-        <!-- ========================================= -->
-        <!-- قراءة العداد -->
-        <!-- ========================================= -->
+        <!-- =============================================== -->
+        <!-- الأزرار -->
+        <!-- =============================================== -->
 
-        <div class="form-group full meter-box">
+        <div class="button-row">
 
-            <label for="meter_reading">
-
-                قراءة العداد الحالية بالكيلومتر
-
-            </label>
-
-            <input
-                type="number"
-                id="meter_reading"
-                name="meter_reading"
-                min="0"
-                step="1"
-                placeholder="مثال: 52430"
+            <button
+                type="submit"
+                class="save-button"
+                id="saveButton"
+                disabled
             >
+                حفظ الصيانة
+            </button>
 
-            <div class="help-text">
-
-                عند انتهاء الصيانة يتم اعتماد هذه القراءة
-                لتحديث الاستحقاق القادم حسب الكيلومترات.
-
-            </div>
-
-        </div>
-
-
-        <!-- ========================================= -->
-        <!-- وصف العمل -->
-        <!-- ========================================= -->
-
-        <div class="form-group full">
-
-            <label for="description">
-
-                وصف العمل أو العطل
-
-            </label>
-
-            <textarea
-                id="description"
-                name="description"
-                placeholder="تفاصيل العمل المنجز أو وصف العطل..."
-            ></textarea>
-
-        </div>
-
-
-        <!-- ========================================= -->
-        <!-- تاريخ بداية الصيانة -->
-        <!-- ========================================= -->
-
-        <div class="form-group">
-
-            <label for="maintenance_date">
-
-                تاريخ بداية الصيانة
-
-            </label>
-
-            <input
-                type="date"
-                id="maintenance_date"
-                name="maintenance_date"
+            <a
+                href="/maintenance"
+                class="cancel-button"
             >
+                إلغاء
+            </a>
 
         </div>
 
+    </form>
 
-        <!-- ========================================= -->
-        <!-- تاريخ انتهاء الصيانة -->
-        <!-- ========================================= -->
-
-        <div class="form-group">
-
-            <label for="completion_date">
-
-                تاريخ انتهاء الصيانة
-
-            </label>
-
-            <input
-                type="date"
-                id="completion_date"
-                name="completion_date"
-            >
-
-        </div>
+</div>
 
 
-        <!-- ========================================= -->
-        <!-- حالة الصيانة -->
-        <!-- ========================================= -->
+<script>
 
-        <div class="form-group">
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
-            <label for="status">
+        const equipmentSelect =
+            document.getElementById(
+                "equipment_id"
+            );
 
-                حالة الصيانة
+        const scheduleSelect =
+            document.getElementById(
+                "maintenance_schedule_id"
+            );
 
-                <span class="required">*</span>
+        const loading =
+            document.getElementById(
+                "scheduleLoading"
+            );
 
-            </label>
+        const noSchedules =
+            document.getElementById(
+                "noSchedules"
+            );
 
-            <select
-                id="status"
-                name="status"
-                required
-            >
+        const scheduleInfo =
+            document.getElementById(
+                "scheduleInfo"
+            );
 
-                <option value="جارية">
-                    جارية
-                </option>
+        const intervalKm =
+            document.getElementById(
+                "intervalKm"
+            );
 
-                <option value="منتهية">
-                    منتهية
-                </option>
+        const intervalDays =
+            document.getElementById(
+                "intervalDays"
+            );
 
-                <option value="ملغاة">
-                    ملغاة
-                </option>
+        const lastMaintenance =
+            document.getElementById(
+                "lastMaintenance"
+            );
 
-            </select>
+        const nextDue =
+            document.getElementById(
+                "nextDue"
+            );
 
-        </div>
+        const scheduleDescription =
+            document.getElementById(
+                "scheduleDescription"
+            );
 
-
-        <!-- ========================================= -->
-        <!-- الملاحظات -->
-        <!-- ========================================= -->
-
-        <div class="form-group full">
-
-            <label for="notes">
-
-                ملاحظات
-
-            </label>
-
-            <textarea
-                id="notes"
-                name="notes"
-                placeholder="أي ملاحظات إضافية..."
-            ></textarea>
-
-        </div>
-
-    </div>
-
-
-    <!-- ========================================= -->
-    <!-- الأزرار -->
-    <!-- ========================================= -->
-
-    <div class="button-row">
-
-        <button
-            type="submit"
-            class="save-button"
-        >
-            حفظ الصيانة
-        </button>
-
-        <a
-            href="/maintenance"
-            class="cancel-button"
-        >
-            إلغاء
-        </a>
-
-    </div>
-
-</form>
-
-</div><script>
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    const equipmentSelect =
-        document.getElementById("equipment_id");
-
-    const scheduleSelect =
-        document.getElementById("maintenance_schedule_id");
-
-    const scheduleInfo =
-        document.getElementById("scheduleInfo");
-
-    const scheduleDetails =
-        document.getElementById("scheduleDetails");
-
-    const noScheduleMessage =
-        document.getElementById("noScheduleMessage");
-
-
-    /*
-    =====================================================
-    عند تغيير العتاد
-    =====================================================
-    */
-
-    equipmentSelect.addEventListener(
-        "change",
-        function () {
-
-            const equipmentId =
-                this.value;
-
-            /*
-            إعادة القائمة إلى حالتها الأساسية
-            */
-
-            scheduleSelect.innerHTML = "";
-
-            const defaultOption =
-                document.createElement("option");
-
-            defaultOption.value = "";
-            defaultOption.textContent =
-                equipmentId
-                    ? "-- اختر خطة الصيانة --"
-                    : "-- اختر العتاد أولًا --";
-
-            scheduleSelect.appendChild(
-                defaultOption
+        const saveButton =
+            document.getElementById(
+                "saveButton"
             );
 
 
-            /*
-            إخفاء المعلومات السابقة
-            */
+        function resetScheduleInfo() {
 
-            scheduleInfo.style.display =
-                "none";
+            scheduleInfo.style.display = "none";
 
-            noScheduleMessage.style.display =
-                "none";
+            intervalKm.textContent = "—";
+
+            intervalDays.textContent = "—";
+
+            lastMaintenance.textContent = "—";
+
+            nextDue.textContent = "—";
+
+            scheduleDescription.textContent = "";
+
+        }
 
 
-            /*
-            إذا لم يتم اختيار عتاد
-            */
+        function resetScheduleSelect() {
+
+            scheduleSelect.innerHTML =
+                '<option value="">-- اختر العتاد أولًا --</option>';
+
+            scheduleSelect.disabled = true;
+
+            saveButton.disabled = true;
+
+            noSchedules.style.display = "none";
+
+            resetScheduleInfo();
+
+        }
+
+
+        function formatIntervalKm(value) {
+
+            if (
+                value === null ||
+                value === undefined
+            ) {
+
+                return "غير محدد";
+
+            }
+
+            return value + " كم";
+
+        }
+
+
+        function formatIntervalDays(value) {
+
+            if (
+                value === null ||
+                value === undefined
+            ) {
+
+                return "غير محدد";
+
+            }
+
+            return value + " يوم";
+
+        }
+
+
+        function showScheduleInfo(schedule) {
+
+            intervalKm.textContent =
+                formatIntervalKm(
+                    schedule.interval_km
+                );
+
+            intervalDays.textContent =
+                formatIntervalDays(
+                    schedule.interval_days
+                );
+
+            lastMaintenance.textContent =
+                schedule.last_maintenance_date
+                || "لم تنفذ بعد";
+
+            let dueText = [];
+
+            if (schedule.next_due_date) {
+
+                dueText.push(
+                    "تاريخ: " +
+                    schedule.next_due_date
+                );
+
+            }
+
+            if (schedule.next_due_meter !== null &&
+                schedule.next_due_meter !== undefined) {
+
+                dueText.push(
+                    "عداد: " +
+                    schedule.next_due_meter +
+                    " كم"
+                );
+
+            }
+
+            nextDue.textContent =
+                dueText.length
+                ? dueText.join(" | ")
+                : "غير محدد";
+
+            scheduleDescription.textContent =
+                schedule.description || "";
+
+            scheduleInfo.style.display = "block";
+
+        }
+
+
+        async function loadSchedules(
+            equipmentId
+        ) {
+
+            resetScheduleSelect();
 
             if (!equipmentId) {
 
@@ -585,161 +787,181 @@ document.addEventListener("DOMContentLoaded", function () {
 
             }
 
+            loading.style.display = "block";
 
-            /*
-            البحث عن خطط الصيانة
-            الخاصة بالعتاد المختار فقط
-            */
+            try {
 
-            const allSchedules =
-                document.querySelectorAll(
-                    "#maintenance_schedule_id option[data-equipment-id]"
-                );
+                const response =
+                    await fetch(
+                        "/maintenance/schedules/" +
+                        equipmentId
+                    );
 
-            let scheduleCount = 0;
+                if (!response.ok) {
 
-
-            allSchedules.forEach(
-                function (option) {
-
-                    const optionEquipmentId =
-                        option.getAttribute(
-                            "data-equipment-id"
-                        );
-
-                    if (
-                        optionEquipmentId === equipmentId
-                    ) {
-
-                        const newOption =
-                            option.cloneNode(true);
-
-                        scheduleSelect.appendChild(
-                            newOption
-                        );
-
-                        scheduleCount++;
-
-                    }
+                    throw new Error(
+                        "HTTP " +
+                        response.status
+                    );
 
                 }
-            );
 
+                const schedules =
+                    await response.json();
 
-            /*
-            لا توجد خطط
-            */
+                scheduleSelect.innerHTML =
+                    '<option value="">-- اختر خطة الصيانة --</option>';
 
-            if (scheduleCount === 0) {
+                if (
+                    !schedules ||
+                    schedules.length === 0
+                ) {
 
-                noScheduleMessage.style.display =
-                    "block";
+                    noSchedules.style.display =
+                        "block";
 
-            }
+                    scheduleSelect.disabled =
+                        true;
 
-        }
-    );
+                    saveButton.disabled =
+                        true;
 
+                    return;
 
-    /*
-    =====================================================
-    عند اختيار خطة صيانة
-    =====================================================
-    */
+                }
 
-    scheduleSelect.addEventListener(
-        "change",
-        function () {
-
-            const selectedOption =
-                this.options[this.selectedIndex];
-
-
-            if (
-                !this.value ||
-                !selectedOption
-            ) {
-
-                scheduleInfo.style.display =
+                noSchedules.style.display =
                     "none";
 
-                return;
+                schedules.forEach(
+                    function (schedule) {
+
+                        const option =
+                            document.createElement(
+                                "option"
+                            );
+
+                        option.value =
+                            schedule.id;
+
+                        option.textContent =
+                            schedule.name;
+
+                        option.dataset.schedule =
+                            JSON.stringify(
+                                schedule
+                            );
+
+                        scheduleSelect.appendChild(
+                            option
+                        );
+
+                    }
+                );
+
+                scheduleSelect.disabled =
+                    false;
+
+            }
+            catch (error) {
+
+                console.error(
+                    "خطأ في تحميل خطط الصيانة:",
+                    error
+                );
+
+                scheduleSelect.innerHTML =
+                    '<option value="">تعذر تحميل خطط الصيانة</option>';
+
+                scheduleSelect.disabled =
+                    true;
+
+                saveButton.disabled =
+                    true;
+
+            }
+            finally {
+
+                loading.style.display =
+                    "none";
 
             }
 
+        }
 
-            const intervalKm =
-                selectedOption.getAttribute(
-                    "data-interval-km"
+
+        equipmentSelect.addEventListener(
+            "change",
+            function () {
+
+                loadSchedules(
+                    this.value
                 );
-
-            const intervalDays =
-                selectedOption.getAttribute(
-                    "data-interval-days"
-                );
-
-            const description =
-                selectedOption.getAttribute(
-                    "data-description"
-                );
-
-
-            let details = "";
-
-
-            if (intervalKm) {
-
-                details +=
-                    "كل " +
-                    intervalKm +
-                    " كم";
 
             }
+        );
 
 
-            if (intervalDays) {
+        scheduleSelect.addEventListener(
+            "change",
+            function () {
 
-                if (details) {
+                const selectedOption =
+                    this.options[
+                        this.selectedIndex
+                    ];
 
-                    details +=
-                        " — ";
+                if (
+                    !this.value ||
+                    !selectedOption ||
+                    !selectedOption.dataset.schedule
+                ) {
+
+                    resetScheduleInfo();
+
+                    saveButton.disabled =
+                        true;
+
+                    return;
 
                 }
 
-                details +=
-                    "كل " +
-                    intervalDays +
-                    " يوم";
+                try {
+
+                    const schedule =
+                        JSON.parse(
+                            selectedOption.dataset.schedule
+                        );
+
+                    showScheduleInfo(
+                        schedule
+                    );
+
+                    saveButton.disabled =
+                        false;
+
+                }
+                catch (error) {
+
+                    console.error(
+                        "خطأ في بيانات خطة الصيانة:",
+                        error
+                    );
+
+                    resetScheduleInfo();
+
+                    saveButton.disabled =
+                        true;
+
+                }
 
             }
+        );
 
 
-            if (!details) {
+    }
+);
 
-                details =
-                    "لا يوجد شرط زمني أو كيلومتري محدد.";
+</script>
 
-            }
-
-
-            if (description) {
-
-                details +=
-                    "<br>" +
-                    description;
-
-            }
-
-
-            scheduleDetails.innerHTML =
-                details;
-
-            scheduleInfo.style.display =
-                "block";
-
-        }
-    );
-
-});
-
-</script>{% endblock %}
+{% endblock %}

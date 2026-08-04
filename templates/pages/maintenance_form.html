@@ -91,6 +91,21 @@
         margin-bottom: 20px;
     }
 
+    .meter-box {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+    }
+
+    .meter-box label {
+        color: #212529;
+    }
+
+    .required {
+        color: #dc3545;
+    }
+
     .button-row {
         display: flex;
         justify-content: flex-start;
@@ -178,12 +193,13 @@
         <div class="form-grid">
 
 
-            <!-- السيارة / العتاد -->
+            <!-- العتاد -->
 
             <div class="form-group full">
 
                 <label for="equipment_id">
                     السيارة / العتاد
+                    <span class="required">*</span>
                 </label>
 
                 <select
@@ -212,61 +228,85 @@
 
                 </select>
 
+            </div>
+
+
+            <!-- عملية الصيانة المعرفة -->
+
+            <div class="form-group full">
+
+                <label for="maintenance_type_id">
+
+                    عملية الصيانة
+
+                    <span class="required">*</span>
+
+                </label>
+
+                <select
+                    id="maintenance_type_id"
+                    name="maintenance_type_id"
+                    required
+                >
+
+                    <option value="">
+                        -- اختر عملية الصيانة --
+                    </option>
+
+                    {% for maintenance_type in maintenance_types %}
+
+                        <option value="{{ maintenance_type.id }}">
+
+                            {{ maintenance_type.name }}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
                 <div class="help-text">
-                    اختر العتاد الذي ستتم صيانته داخل المؤسسة.
+
+                    اختر العملية من القائمة المعرفة مسبقًا.
+                    لا تكتب اسم العملية يدويًا.
+
                 </div>
 
             </div>
 
 
-            <!-- نوع عملية الصيانة -->
+            <!-- قراءة العداد -->
 
-            <div class="form-group full">
+            <div class="form-group full meter-box">
 
-                <label for="maintenance_type">
-                    نوع عملية الصيانة
+                <label for="meter_reading">
+
+                    قراءة العداد الحالية بالكيلومتر
+
+                    <span class="required">*</span>
+
                 </label>
 
-                <select
-                    id="maintenance_type"
-                    name="maintenance_type"
-                    required
+                <input
+                    type="number"
+                    id="meter_reading"
+                    name="meter_reading"
+                    min="0"
+                    step="1"
+                    placeholder="مثال: 52430"
                 >
 
-                    <option value="">
-                        -- اختر نوع الصيانة --
-                    </option>
+                <div class="help-text">
 
-                    <option value="إصلاح عطل">
-                        إصلاح عطل
-                    </option>
+                    عند تسجيل الصيانة كـ "منتهية"، يجب إدخال قراءة العداد
+                    التي تمت عندها الصيانة.
 
-                    <option value="صيانة دورية">
-                        صيانة دورية
-                    </option>
-
-                    <option value="فحص">
-                        فحص
-                    </option>
-
-                    <option value="تشخيص">
-                        تشخيص
-                    </option>
-
-                    <option value="استبدال قطعة">
-                        استبدال قطعة
-                    </option>
-
-                    <option value="أخرى">
-                        أخرى
-                    </option>
-
-                </select>
+                </div>
 
             </div>
 
 
-            <!-- وصف العمل أو العطل -->
+            <!-- وصف العمل -->
 
             <div class="form-group full">
 
@@ -277,151 +317,12 @@
                 <textarea
                     id="description"
                     name="description"
-                    placeholder="اذكر العطل أو العمل الذي سيتم إنجازه..."
+                    placeholder="تفاصيل إضافية عن العمل أو العطل..."
                 ></textarea>
 
             </div>
 
 
-            <!-- تاريخ بدء الصيانة -->
+            <!-- تاريخ الصيانة -->
 
-            <div class="form-group">
-
-                <label for="maintenance_date">
-                    تاريخ بدء الصيانة
-                </label>
-
-                <input
-                    type="date"
-                    id="maintenance_date"
-                    name="maintenance_date"
-                    required
-                >
-
-            </div>
-
-
-            <!-- تاريخ انتهاء الصيانة -->
-
-            <div class="form-group">
-
-                <label for="completion_date">
-                    تاريخ انتهاء الصيانة
-                </label>
-
-                <input
-                    type="date"
-                    id="completion_date"
-                    name="completion_date"
-                >
-
-                <div class="help-text">
-                    يترك فارغًا إذا كانت الصيانة ما زالت جارية.
-                </div>
-
-            </div>
-
-
-            <!-- حالة الصيانة -->
-
-            <div class="form-group">
-
-                <label for="status">
-                    حالة الصيانة
-                </label>
-
-                <select
-                    id="status"
-                    name="status"
-                    required
-                >
-
-                    <option value="جارية">
-                        جارية
-                    </option>
-
-                    <option value="منتهية">
-                        منتهية
-                    </option>
-
-                    <option value="ملغاة">
-                        ملغاة
-                    </option>
-
-                </select>
-
-            </div>
-
-
-            <!-- الملاحظات -->
-
-            <div class="form-group full">
-
-                <label for="notes">
-                    ملاحظات
-                </label>
-
-                <textarea
-                    id="notes"
-                    name="notes"
-                    placeholder="ملاحظات إضافية..."
-                ></textarea>
-
-            </div>
-
-
-        </div>
-
-
-        <!-- الأزرار -->
-
-        <div class="button-row">
-
-            <button
-                type="submit"
-                class="save-button"
-            >
-                حفظ الصيانة
-            </button>
-
-            <a
-                href="/maintenance"
-                class="cancel-button"
-            >
-                إلغاء
-            </a>
-
-        </div>
-
-    </form>
-
-</div>
-
-
-<script>
-
-    document.addEventListener(
-        "DOMContentLoaded",
-        function () {
-
-            const maintenanceDate =
-                document.getElementById("maintenance_date");
-
-            if (
-                maintenanceDate &&
-                !maintenanceDate.value
-            ) {
-
-                const today =
-                    new Date().toISOString().split("T")[0];
-
-                maintenanceDate.value = today;
-
-            }
-
-        }
-    );
-
-</script>
-
-{% endblock %}
+            <div class="

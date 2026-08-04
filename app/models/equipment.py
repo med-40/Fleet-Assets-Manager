@@ -75,7 +75,10 @@ class Equipment(Base):
         String(500)
     )
 
-    # العلاقة مع نوع العتاد
+    # =====================================================
+    # العلاقات الأساسية
+    # =====================================================
+
     equipment_type = relationship(
         "EquipmentType"
     )
@@ -106,6 +109,16 @@ class Equipment(Base):
 
     meter_readings = relationship(
         "MeterReading",
+        back_populates="equipment",
+        cascade="all, delete-orphan"
+    )
+
+    # =====================================================
+    # خطط الصيانة
+    # =====================================================
+
+    maintenance_schedules = relationship(
+        "MaintenanceSchedule",
         back_populates="equipment",
         cascade="all, delete-orphan"
     )

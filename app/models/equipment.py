@@ -99,3 +99,13 @@ class Equipment(Base):
         back_populates="equipment",
         cascade="all, delete-orphan"
     )
+
+    # =====================================================
+    # قراءات العداد
+    # =====================================================
+
+    meter_readings = relationship(
+        "MeterReading",
+        back_populates="equipment",
+        cascade="all, delete-orphan"
+    )

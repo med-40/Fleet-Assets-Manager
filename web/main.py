@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from sqlalchemy import text
@@ -39,21 +39,6 @@ app = FastAPI(
     description="نظام تسيير الحضيرة",
     version="1.0.0"
 )
-
-
-# =========================================================
-# حالات العتاد
-# =========================================================
-
-AVAILABLE_EQUIPMENT_STATUSES = (
-    "متاحة",
-    "Available",
-    "Active",
-)
-
-MISSION_EQUIPMENT_STATUS = "في مهمة"
-MAINTENANCE_EQUIPMENT_STATUS = "في الصيانة"
-WORKSHOP_EQUIPMENT_STATUS = "في ورشة خارجية"
 
 
 # =========================================================
@@ -95,83 +80,101 @@ def dashboard(request: Request):
         tires = 0
 
         try:
-            vehicles = db.execute(
-                text(
-                    "SELECT COUNT(*) FROM equipment"
-                )
-            ).scalar() or 0
+            vehicles = (
+                db.execute(
+                    text(
+                        "SELECT COUNT(*) FROM equipment"
+                    )
+                ).scalar()
+                or 0
+            )
         except Exception:
             vehicles = 0
 
         try:
-            active_missions = db.execute(
-                text(
-                    """
-                    SELECT COUNT(*)
-                    FROM missions
-                    WHERE status IN (
-                        'جارية',
-                        'Active',
-                        'في مهمة'
+            active_missions = (
+                db.execute(
+                    text(
+                        """
+                        SELECT COUNT(*)
+                        FROM missions
+                        WHERE status IN (
+                            'جارية',
+                            'Active',
+                            'في مهمة'
+                        )
+                        """
                     )
-                    """
-                )
-            ).scalar() or 0
+                ).scalar()
+                or 0
+            )
         except Exception:
             active_missions = 0
 
         try:
-            due_maintenance = db.execute(
-                text(
-                    """
-                    SELECT COUNT(*)
-                    FROM maintenance_orders
-                    WHERE status IN (
-                        'جارية',
-                        'في الصيانة'
+            due_maintenance = (
+                db.execute(
+                    text(
+                        """
+                        SELECT COUNT(*)
+                        FROM maintenance_orders
+                        WHERE status IN (
+                            'جارية',
+                            'في الصيانة'
+                        )
+                        """
                     )
-                    """
-                )
-            ).scalar() or 0
+                ).scalar()
+                or 0
+            )
         except Exception:
             due_maintenance = 0
 
         try:
-            monthly_fuel = db.execute(
-                text(
-                    """
-                    SELECT COALESCE(
-                        SUM(quantity),
-                        0
+            monthly_fuel = (
+                db.execute(
+                    text(
+                        """
+                        SELECT COALESCE(
+                            SUM(quantity),
+                            0
+                        )
+                        FROM fuel_logs
+                        """
                     )
-                    FROM fuel_logs
-                    """
-                )
-            ).scalar() or 0
+                ).scalar()
+                or 0
+            )
         except Exception:
             monthly_fuel = 0
 
         try:
-            batteries = db.execute(
-                text(
-                    """
-                    SELECT COUNT(*)
-                    FROM batteries
-                    """
-                )
-            ).scalar() or 0
+            batteries = (
+                db.execute(
+                    text(
+                        """
+                        SELECT COUNT(*)
+                        FROM batteries
+                        """
+                    )
+                ).scalar()
+                or 0
+            )
         except Exception:
             batteries = 0
 
         try:
-            tires = db.execute(
-                text(
-                    """
-                    SELECT COUNT(*)
-                    FROM tires
-                    """
-                )
-            ).scalar() or 0
+            tires = (
+                db.execute(
+                    text(
+                        """
+                        SELECT COUNT(*)
+                        FROM tires
+                        """
+                    )
+                ).scalar()
+                or 0
+            )
         except Exception:
             tires = 0
 
@@ -315,7 +318,7 @@ def create_equipment(
         model = model.strip()
         registration_number = registration_number.strip()
         chassis_number = chassis_number.strip()
-        status = status.strip() or "متاحة"
+        status = status.strip()
         department = department.strip()
         fuel_type = fuel_type.strip()
         fuel_consumption = fuel_consumption.strip()
@@ -329,25 +332,28 @@ def create_equipment(
             .all()
         )
 
-        def error_response(message):
+        if not receipt_document:
+
             return templates.TemplateResponse(
                 request=request,
                 name="pages/equipment_form.html",
                 context={
                     "equipment_types": equipment_types,
-                    "error": message
+                    "error": "وثيقة الاستلام مطلوبة."
                 },
                 status_code=400
             )
 
-        if not receipt_document:
-            return error_response(
-                "وثيقة الاستلام مطلوبة."
-            )
-
         if not registration_number:
-            return error_response(
-                "رقم التسجيل مطلوب."
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/equipment_form.html",
+                context={
+                    "equipment_types": equipment_types,
+                    "error": "رقم التسجيل مطلوب."
+                },
+                status_code=400
             )
 
         equipment_type = (
@@ -359,8 +365,15 @@ def create_equipment(
         )
 
         if equipment_type is None:
-            return error_response(
-                "نوع العتاد غير موجود."
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/equipment_form.html",
+                context={
+                    "equipment_types": equipment_types,
+                    "error": "نوع العتاد غير موجود."
+                },
+                status_code=400
             )
 
         existing_registration = (
@@ -373,8 +386,15 @@ def create_equipment(
         )
 
         if existing_registration:
-            return error_response(
-                "رقم التسجيل موجود مسبقًا."
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/equipment_form.html",
+                context={
+                    "equipment_types": equipment_types,
+                    "error": "رقم التسجيل موجود مسبقًا."
+                },
+                status_code=400
             )
 
         existing_receipt = (
@@ -387,8 +407,15 @@ def create_equipment(
         )
 
         if existing_receipt:
-            return error_response(
-                "وثيقة الاستلام مستخدمة مسبقًا."
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/equipment_form.html",
+                context={
+                    "equipment_types": equipment_types,
+                    "error": "وثيقة الاستلام مستخدمة مسبقًا."
+                },
+                status_code=400
             )
 
         parsed_fuel_consumption = None
@@ -400,14 +427,19 @@ def create_equipment(
                     fuel_consumption
                 )
 
-            except ValueError:
-                return error_response(
-                    "معدل استهلاك الوقود غير صحيح."
-                )
+                if parsed_fuel_consumption < 0:
+                    raise ValueError
 
-            if parsed_fuel_consumption < 0:
-                return error_response(
-                    "معدل استهلاك الوقود لا يمكن أن يكون سالبًا."
+            except ValueError:
+
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/equipment_form.html",
+                    context={
+                        "equipment_types": equipment_types,
+                        "error": "معدل استهلاك الوقود غير صحيح."
+                    },
+                    status_code=400
                 )
 
         new_equipment = Equipment(
@@ -415,7 +447,7 @@ def create_equipment(
             equipment_type_id=equipment_type_id,
             model=model,
             registration_number=registration_number,
-            chassis_number=chassis_number or None,
+            chassis_number=chassis_number,
             status=status,
             department=department,
             fuel_type=fuel_type,
@@ -481,7 +513,11 @@ def get_available_equipment(db):
         db.query(Equipment)
         .filter(
             Equipment.status.in_(
-                AVAILABLE_EQUIPMENT_STATUSES
+                [
+                    "متاحة",
+                    "Available",
+                    "Active"
+                ]
             )
         )
         .order_by(
@@ -572,18 +608,6 @@ def create_mission(
             .all()
         )
 
-        def error_response(message):
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/mission_form.html",
-                context={
-                    "equipment_list": equipment_list,
-                    "drivers": qualified_drivers,
-                    "error": message
-                },
-                status_code=400
-            )
-
         equipment = (
             db.query(Equipment)
             .filter(
@@ -593,15 +617,37 @@ def create_mission(
         )
 
         if equipment is None:
-            return error_response(
-                "السيارة / العتاد غير موجود."
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": "السيارة / العتاد غير موجود."
+                },
+                status_code=400
             )
 
-        if equipment.status not in AVAILABLE_EQUIPMENT_STATUSES:
-            return error_response(
-                "لا يمكن إسناد هذه السيارة إلى مهمة. "
-                f"حالتها الحالية: "
-                f"{equipment.status or 'غير محددة'}."
+        if equipment.status not in (
+            "متاحة",
+            "Available",
+            "Active"
+        ):
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": (
+                        "لا يمكن إسناد هذه السيارة إلى مهمة. "
+                        f"حالتها الحالية: "
+                        f"{equipment.status or 'غير محددة'}."
+                    )
+                },
+                status_code=400
             )
 
         driver = (
@@ -615,18 +661,39 @@ def create_mission(
         )
 
         if driver is None:
-            return error_response(
-                "لا يمكن اختيار هذا السائق. "
-                "يجب أن يكون مؤهلًا بدرجة جيد ومؤكد التأهيل."
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": (
+                        "لا يمكن اختيار هذا السائق. "
+                        "يجب أن يكون مؤهلًا بدرجة جيد "
+                        "ومؤكد التأهيل."
+                    )
+                },
+                status_code=400
             )
 
         try:
+
             parsed_start_date = date.fromisoformat(
                 start_date
             )
+
         except ValueError:
-            return error_response(
-                "تاريخ بداية المهمة غير صحيح."
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/mission_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "drivers": qualified_drivers,
+                    "error": "تاريخ بداية المهمة غير صحيح."
+                },
+                status_code=400
             )
 
         parsed_end_date = None
@@ -634,17 +701,38 @@ def create_mission(
         if end_date:
 
             try:
+
                 parsed_end_date = date.fromisoformat(
                     end_date
                 )
+
             except ValueError:
-                return error_response(
-                    "تاريخ نهاية المهمة غير صحيح."
+
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/mission_form.html",
+                    context={
+                        "equipment_list": equipment_list,
+                        "drivers": qualified_drivers,
+                        "error": "تاريخ نهاية المهمة غير صحيح."
+                    },
+                    status_code=400
                 )
 
             if parsed_end_date < parsed_start_date:
-                return error_response(
-                    "تاريخ نهاية المهمة لا يمكن أن يكون قبل تاريخ البداية."
+
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/mission_form.html",
+                    context={
+                        "equipment_list": equipment_list,
+                        "drivers": qualified_drivers,
+                        "error": (
+                            "تاريخ نهاية المهمة لا يمكن "
+                            "أن يكون قبل تاريخ البداية."
+                        )
+                    },
+                    status_code=400
                 )
 
         new_mission = Mission(
@@ -660,7 +748,7 @@ def create_mission(
 
         db.add(new_mission)
 
-        equipment.status = MISSION_EQUIPMENT_STATUS
+        equipment.status = "في مهمة"
 
         db.commit()
 
@@ -698,6 +786,7 @@ def complete_mission(mission_id: int):
         )
 
         if mission is None:
+
             return RedirectResponse(
                 url="/missions",
                 status_code=303
@@ -707,6 +796,7 @@ def complete_mission(mission_id: int):
             "Completed",
             "منتهية"
         ):
+
             return RedirectResponse(
                 url="/missions",
                 status_code=303
@@ -726,9 +816,10 @@ def complete_mission(mission_id: int):
         if equipment is not None:
 
             if equipment.status in (
-                MISSION_EQUIPMENT_STATUS,
+                "في مهمة",
                 "On Mission"
             ):
+
                 equipment.status = "متاحة"
 
         db.commit()
@@ -779,11 +870,95 @@ def maintenance_page(request: Request):
 
 
 # =========================================================
+# الحصول على خطط صيانة عتاد محدد
+# =========================================================
+
+def get_equipment_maintenance_schedules(
+    db,
+    equipment_id
+):
+
+    return (
+        db.query(MaintenanceSchedule)
+        .filter(
+            MaintenanceSchedule.equipment_id
+            == equipment_id
+        )
+        .order_by(
+            MaintenanceSchedule.name
+        )
+        .all()
+    )
+
+
+# =========================================================
+# API:
+# جلب خطط الصيانة الخاصة بالعتاد المختار
+# =========================================================
+
+@app.get("/maintenance/schedules/{equipment_id}")
+def maintenance_schedules_api(
+    equipment_id: int
+):
+
+    db = SessionLocal()
+
+    try:
+
+        schedules = get_equipment_maintenance_schedules(
+            db=db,
+            equipment_id=equipment_id
+        )
+
+        return JSONResponse(
+            content=[
+                {
+                    "id": schedule.id,
+                    "name": schedule.name,
+                    "description": (
+                        schedule.description
+                        or ""
+                    ),
+                    "interval_km": (
+                        schedule.interval_km
+                    ),
+                    "interval_days": (
+                        schedule.interval_days
+                    ),
+                    "last_maintenance_date": (
+                        schedule.last_maintenance_date.isoformat()
+                        if schedule.last_maintenance_date
+                        else None
+                    ),
+                    "last_maintenance_meter": (
+                        schedule.last_maintenance_meter
+                    ),
+                    "next_due_date": (
+                        schedule.next_due_date.isoformat()
+                        if schedule.next_due_date
+                        else None
+                    ),
+                    "next_due_meter": (
+                        schedule.next_due_meter
+                    )
+                }
+                for schedule in schedules
+            ]
+        )
+
+    finally:
+        db.close()
+
+
+# =========================================================
 # إضافة صيانة - صفحة النموذج
 # =========================================================
 
 @app.get("/maintenance/new")
-def new_maintenance_page(request: Request):
+def new_maintenance_page(
+    request: Request,
+    equipment_id: int | None = None
+):
 
     db = SessionLocal()
 
@@ -797,20 +972,41 @@ def new_maintenance_page(request: Request):
             .all()
         )
 
-        maintenance_schedules = (
-            db.query(MaintenanceSchedule)
-            .order_by(
-                MaintenanceSchedule.name
+        maintenance_schedules = []
+
+        if equipment_id is not None:
+
+            equipment = (
+                db.query(Equipment)
+                .filter(
+                    Equipment.id == equipment_id
+                )
+                .first()
             )
-            .all()
-        )
+
+            if equipment is not None:
+
+                maintenance_schedules = (
+                    get_equipment_maintenance_schedules(
+                        db=db,
+                        equipment_id=equipment_id
+                    )
+                )
 
         return templates.TemplateResponse(
             request=request,
             name="pages/maintenance_form.html",
             context={
                 "equipment_list": equipment_list,
+
+                # الاسم الذي تستخدمه الصفحة الحالية
+                "maintenance_types": maintenance_schedules,
+
+                # الاحتفاظ بالاسم الآخر للتوافق
                 "maintenance_schedules": maintenance_schedules,
+
+                "selected_equipment_id": equipment_id,
+
                 "error": None
             }
         )
@@ -827,7 +1023,8 @@ def maintenance_error_response(
     request,
     equipment_list,
     maintenance_schedules,
-    error
+    error,
+    selected_equipment_id=None
 ):
 
     return templates.TemplateResponse(
@@ -835,7 +1032,17 @@ def maintenance_error_response(
         name="pages/maintenance_form.html",
         context={
             "equipment_list": equipment_list,
+
+            # الاسم المستخدم في HTML الحالي
+            "maintenance_types": maintenance_schedules,
+
+            # اسم بديل للتوافق
             "maintenance_schedules": maintenance_schedules,
+
+            "selected_equipment_id": (
+                selected_equipment_id
+            ),
+
             "error": error
         },
         status_code=400
@@ -848,19 +1055,33 @@ def maintenance_error_response(
 
 def get_maintenance_schedule(
     db,
-    schedule_id
+    schedule_id,
+    equipment_id=None
 ):
 
     if schedule_id is None:
         return None
 
-    return (
+    query = (
         db.query(MaintenanceSchedule)
         .filter(
             MaintenanceSchedule.id == schedule_id
         )
-        .first()
     )
+
+    # -----------------------------------------------------
+    # إذا تم تحديد العتاد:
+    # لا نسمح أبدًا بإرجاع خطة لعتاد آخر.
+    # -----------------------------------------------------
+
+    if equipment_id is not None:
+
+        query = query.filter(
+            MaintenanceSchedule.equipment_id
+            == equipment_id
+        )
+
+    return query.first()
 
 
 # =========================================================
@@ -876,34 +1097,51 @@ def update_maintenance_schedule_after_completion(
     if schedule is None:
         return
 
-    schedule.last_maintenance_date = completion_date
-    schedule.last_maintenance_meter = meter_reading
+    schedule.last_maintenance_date = (
+        completion_date
+    )
 
-    # الاستحقاق حسب الأيام
+    schedule.last_maintenance_meter = (
+        meter_reading
+    )
+
+    # -----------------------------------------------------
+    # الاستحقاق القادم حسب الأيام
+    # -----------------------------------------------------
+
     if (
         schedule.interval_days is not None
         and schedule.interval_days > 0
     ):
+
         schedule.next_due_date = (
             completion_date
             + timedelta(
                 days=schedule.interval_days
             )
         )
+
     else:
+
         schedule.next_due_date = None
 
-    # الاستحقاق حسب العداد
+    # -----------------------------------------------------
+    # الاستحقاق القادم حسب العداد
+    # -----------------------------------------------------
+
     if (
         schedule.interval_km is not None
         and schedule.interval_km > 0
         and meter_reading is not None
     ):
+
         schedule.next_due_meter = (
             meter_reading
             + schedule.interval_km
         )
+
     else:
+
         schedule.next_due_meter = None
 
 
@@ -925,13 +1163,14 @@ def create_meter_reading(
     )
 
     db.add(new_reading)
+
     db.flush()
 
     return new_reading
 
 
 # =========================================================
-# الحصول على أعلى قراءة عداد
+# الحصول على آخر قراءة عداد
 # =========================================================
 
 def get_last_meter_reading(
@@ -960,7 +1199,13 @@ def get_last_meter_reading(
 def create_maintenance(
     request: Request,
     equipment_id: int = Form(...),
+
+    # الصفحة الحالية تستخدم maintenance_type_id
+    maintenance_type_id: str = Form(""),
+
+    # للتوافق مع أي نموذج قديم
     maintenance_schedule_id: str = Form(""),
+
     meter_reading: str = Form(""),
     description: str = Form(""),
     maintenance_date: str = Form(""),
@@ -974,6 +1219,10 @@ def create_maintenance(
     try:
 
         description = description.strip()
+
+        maintenance_type_id = (
+            maintenance_type_id.strip()
+        )
 
         maintenance_schedule_id = (
             maintenance_schedule_id.strip()
@@ -993,14 +1242,6 @@ def create_maintenance(
             .all()
         )
 
-        maintenance_schedules = (
-            db.query(MaintenanceSchedule)
-            .order_by(
-                MaintenanceSchedule.name
-            )
-            .all()
-        )
-
         # -------------------------------------------------
         # التحقق من العتاد
         # -------------------------------------------------
@@ -1014,52 +1255,82 @@ def create_maintenance(
         )
 
         if equipment is None:
+
             return maintenance_error_response(
                 request,
                 equipment_list,
-                maintenance_schedules,
-                "السيارة / العتاد غير موجود."
+                [],
+                "السيارة / العتاد غير موجود.",
+                equipment_id
             )
 
         # -------------------------------------------------
-        # التحقق من خطة الصيانة
+        # جلب خطط هذا العتاد فقط
         # -------------------------------------------------
+
+        maintenance_schedules = (
+            get_equipment_maintenance_schedules(
+                db=db,
+                equipment_id=equipment_id
+            )
+        )
+
+        # -------------------------------------------------
+        # تحديد رقم الخطة
+        # -------------------------------------------------
+
+        selected_schedule_id = (
+            maintenance_type_id
+            or maintenance_schedule_id
+        )
 
         selected_schedule = None
 
-        if maintenance_schedule_id:
+        if selected_schedule_id:
 
             try:
+
                 parsed_schedule_id = int(
-                    maintenance_schedule_id
+                    selected_schedule_id
                 )
+
             except ValueError:
+
                 return maintenance_error_response(
                     request,
                     equipment_list,
                     maintenance_schedules,
-                    "خطة الصيانة المحددة غير صحيحة."
+                    "خطة الصيانة المحددة غير صحيحة.",
+                    equipment_id
                 )
 
-            selected_schedule = get_maintenance_schedule(
-                db=db,
-                schedule_id=parsed_schedule_id
+            # -------------------------------------------------
+            # مهم جدًا:
+            # يتم البحث عن الخطة مع equipment_id معًا.
+            #
+            # لذلك لا يمكن اختيار خطة عتاد آخر
+            # حتى لو تم تغيير قيمة ID يدويًا.
+            # -------------------------------------------------
+
+            selected_schedule = (
+                get_maintenance_schedule(
+                    db=db,
+                    schedule_id=parsed_schedule_id,
+                    equipment_id=equipment_id
+                )
             )
 
             if selected_schedule is None:
-                return maintenance_error_response(
-                    request,
-                    equipment_list,
-                    maintenance_schedules,
-                    "خطة الصيانة المحددة غير موجودة."
-                )
 
-            if selected_schedule.equipment_id != equipment_id:
                 return maintenance_error_response(
                     request,
                     equipment_list,
                     maintenance_schedules,
-                    "خطة الصيانة لا تخص العتاد المحدد."
+                    (
+                        "خطة الصيانة المحددة غير موجودة "
+                        "أو لا تخص العتاد المختار."
+                    ),
+                    equipment_id
                 )
 
         # -------------------------------------------------
@@ -1073,11 +1344,13 @@ def create_maintenance(
         )
 
         if status not in allowed_statuses:
+
             return maintenance_error_response(
                 request,
                 equipment_list,
                 maintenance_schedules,
-                "حالة الصيانة غير صحيحة."
+                "حالة الصيانة غير صحيحة.",
+                equipment_id
             )
 
         # -------------------------------------------------
@@ -1089,15 +1362,21 @@ def create_maintenance(
         if maintenance_date:
 
             try:
-                parsed_maintenance_date = date.fromisoformat(
-                    maintenance_date
+
+                parsed_maintenance_date = (
+                    date.fromisoformat(
+                        maintenance_date
+                    )
                 )
+
             except ValueError:
+
                 return maintenance_error_response(
                     request,
                     equipment_list,
                     maintenance_schedules,
-                    "تاريخ الصيانة غير صحيح."
+                    "تاريخ الصيانة غير صحيح.",
+                    equipment_id
                 )
 
         # -------------------------------------------------
@@ -1109,18 +1388,28 @@ def create_maintenance(
         if completion_date:
 
             try:
-                parsed_completion_date = date.fromisoformat(
-                    completion_date
+
+                parsed_completion_date = (
+                    date.fromisoformat(
+                        completion_date
+                    )
                 )
+
             except ValueError:
+
                 return maintenance_error_response(
                     request,
                     equipment_list,
                     maintenance_schedules,
-                    "تاريخ انتهاء الصيانة غير صحيح."
+                    "تاريخ انتهاء الصيانة غير صحيح.",
+                    equipment_id
                 )
 
-            if parsed_completion_date < parsed_maintenance_date:
+            if (
+                parsed_completion_date
+                < parsed_maintenance_date
+            ):
+
                 return maintenance_error_response(
                     request,
                     equipment_list,
@@ -1128,14 +1417,19 @@ def create_maintenance(
                     (
                         "تاريخ انتهاء الصيانة لا يمكن "
                         "أن يكون قبل تاريخ بدايتها."
-                    )
+                    ),
+                    equipment_id
                 )
 
-        # إذا كانت منتهية ولم يدخل المستخدم تاريخ النهاية
+        # -------------------------------------------------
+        # إذا كانت الصيانة منتهية
+        # -------------------------------------------------
+
         if (
             status == "منتهية"
             and parsed_completion_date is None
         ):
+
             parsed_completion_date = date.today()
 
         # -------------------------------------------------
@@ -1147,23 +1441,29 @@ def create_maintenance(
         if meter_reading:
 
             try:
+
                 parsed_meter_reading = int(
                     meter_reading
                 )
+
             except ValueError:
+
                 return maintenance_error_response(
                     request,
                     equipment_list,
                     maintenance_schedules,
-                    "قراءة العداد يجب أن تكون رقمًا صحيحًا."
+                    "قراءة العداد يجب أن تكون رقمًا صحيحًا.",
+                    equipment_id
                 )
 
             if parsed_meter_reading < 0:
+
                 return maintenance_error_response(
                     request,
                     equipment_list,
                     maintenance_schedules,
-                    "قراءة العداد لا يمكن أن تكون سالبة."
+                    "قراءة العداد لا يمكن أن تكون سالبة.",
+                    equipment_id
                 )
 
         # -------------------------------------------------
@@ -1174,6 +1474,7 @@ def create_maintenance(
             status == "منتهية"
             and parsed_meter_reading is None
         ):
+
             return maintenance_error_response(
                 request,
                 equipment_list,
@@ -1181,7 +1482,8 @@ def create_maintenance(
                 (
                     "يجب إدخال قراءة العداد عند تسجيل "
                     "الصيانة كمنتهية."
-                )
+                ),
+                equipment_id
             )
 
         # -------------------------------------------------
@@ -1190,9 +1492,11 @@ def create_maintenance(
 
         if parsed_meter_reading is not None:
 
-            last_meter_reading = get_last_meter_reading(
-                db=db,
-                equipment_id=equipment_id
+            last_meter_reading = (
+                get_last_meter_reading(
+                    db=db,
+                    equipment_id=equipment_id
+                )
             )
 
             if (
@@ -1200,6 +1504,7 @@ def create_maintenance(
                 and parsed_meter_reading
                 < last_meter_reading.reading_value
             ):
+
                 return maintenance_error_response(
                     request,
                     equipment_list,
@@ -1208,11 +1513,28 @@ def create_maintenance(
                         "قراءة العداد الجديدة أقل من آخر "
                         "قراءة مسجلة "
                         f"({last_meter_reading.reading_value} كم)."
-                    )
+                    ),
+                    equipment_id
                 )
 
         # -------------------------------------------------
-        # اسم العملية
+        # إنشاء قراءة العداد
+        # -------------------------------------------------
+
+        if parsed_meter_reading is not None:
+
+            create_meter_reading(
+                db=db,
+                equipment_id=equipment_id,
+                reading_value=parsed_meter_reading,
+                reading_date=(
+                    parsed_completion_date
+                    or parsed_maintenance_date
+                )
+            )
+
+        # -------------------------------------------------
+        # تحديد اسم العملية
         # -------------------------------------------------
 
         if selected_schedule is not None:
@@ -1231,45 +1553,38 @@ def create_maintenance(
 
         new_maintenance = MaintenanceOrder(
             equipment_id=equipment_id,
+
             maintenance_schedule_id=(
                 selected_schedule.id
                 if selected_schedule is not None
                 else None
             ),
+
             maintenance_type=maintenance_type_name,
+
             description=description,
-            maintenance_date=parsed_maintenance_date,
-            completion_date=parsed_completion_date,
-            meter_reading=parsed_meter_reading,
+
+            maintenance_date=(
+                parsed_maintenance_date
+            ),
+
+            completion_date=(
+                parsed_completion_date
+            ),
+
+            meter_reading=(
+                parsed_meter_reading
+            ),
+
             status=status,
+
             notes=notes
         )
 
         db.add(new_maintenance)
 
         # -------------------------------------------------
-        # قراءة العداد
-        #
-        # نسجل القراءة فقط إذا كانت الصيانة منتهية.
-        # -------------------------------------------------
-
-        if (
-            status == "منتهية"
-            and parsed_meter_reading is not None
-        ):
-
-            create_meter_reading(
-                db=db,
-                equipment_id=equipment_id,
-                reading_value=parsed_meter_reading,
-                reading_date=(
-                    parsed_completion_date
-                    or date.today()
-                )
-            )
-
-        # -------------------------------------------------
-        # تحديث خطة الصيانة بعد التنفيذ
+        # تحديث خطة الصيانة عند الانتهاء
         # -------------------------------------------------
 
         if (
@@ -1279,11 +1594,15 @@ def create_maintenance(
 
             update_maintenance_schedule_after_completion(
                 schedule=selected_schedule,
+
                 completion_date=(
                     parsed_completion_date
                     or date.today()
                 ),
-                meter_reading=parsed_meter_reading
+
+                meter_reading=(
+                    parsed_meter_reading
+                )
             )
 
         # -------------------------------------------------
@@ -1292,7 +1611,7 @@ def create_maintenance(
 
         if status == "جارية":
 
-            equipment.status = MAINTENANCE_EQUIPMENT_STATUS
+            equipment.status = "في الصيانة"
 
         elif status == "منتهية":
 
@@ -1300,11 +1619,12 @@ def create_maintenance(
 
         elif status == "ملغاة":
 
-            if equipment.status == MAINTENANCE_EQUIPMENT_STATUS:
+            if equipment.status == "في الصيانة":
+
                 equipment.status = "متاحة"
 
         # -------------------------------------------------
-        # الحفظ
+        # حفظ كل شيء في معاملة واحدة
         # -------------------------------------------------
 
         db.commit()
@@ -1409,7 +1729,9 @@ def create_workshop_transfer(
         workshop_name = workshop_name.strip()
         dispatch_document = dispatch_document.strip()
         dispatch_date = dispatch_date.strip()
-        expected_return_date = expected_return_date.strip()
+        expected_return_date = (
+            expected_return_date.strip()
+        )
         reason = reason.strip()
         notes = notes.strip()
 
@@ -1421,25 +1743,28 @@ def create_workshop_transfer(
             .all()
         )
 
-        def error_response(message):
+        if not workshop_name:
+
             return templates.TemplateResponse(
                 request=request,
                 name="pages/workshop_form.html",
                 context={
                     "equipment_list": equipment_list,
-                    "error": message
+                    "error": "اسم الورشة مطلوب."
                 },
                 status_code=400
             )
 
-        if not workshop_name:
-            return error_response(
-                "اسم الورشة مطلوب."
-            )
-
         if not dispatch_document:
-            return error_response(
-                "وثيقة الإرسال مطلوبة."
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/workshop_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "error": "وثيقة الإرسال مطلوبة."
+                },
+                status_code=400
             )
 
         equipment = (
@@ -1451,73 +1776,127 @@ def create_workshop_transfer(
         )
 
         if equipment is None:
-            return error_response(
-                "السيارة / العتاد غير موجود."
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/workshop_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "error": "السيارة / العتاد غير موجود."
+                },
+                status_code=400
             )
 
-        if equipment.status not in AVAILABLE_EQUIPMENT_STATUSES:
-            return error_response(
-                "لا يمكن إرسال هذا العتاد إلى الورشة "
-                f"لأن حالته الحالية هي: "
-                f"{equipment.status or 'غير محددة'}."
-            )
+        if equipment.status not in (
+            "متاحة",
+            "Available",
+            "Active"
+        ):
 
-        # -------------------------------------------------
-        # تاريخ الإرسال
-        # -------------------------------------------------
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/workshop_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "error": (
+                        "لا يمكن إرسال هذا العتاد إلى الورشة "
+                        f"لأن حالته الحالية هي: "
+                        f"{equipment.status or 'غير محددة'}."
+                    )
+                },
+                status_code=400
+            )
 
         parsed_dispatch_date = date.today()
 
         if dispatch_date:
 
             try:
-                parsed_dispatch_date = date.fromisoformat(
-                    dispatch_date
-                )
-            except ValueError:
-                return error_response(
-                    "تاريخ الإرسال غير صحيح."
+
+                parsed_dispatch_date = (
+                    date.fromisoformat(
+                        dispatch_date
+                    )
                 )
 
-        # -------------------------------------------------
-        # تاريخ العودة المتوقع
-        # -------------------------------------------------
+            except ValueError:
+
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/workshop_form.html",
+                    context={
+                        "equipment_list": equipment_list,
+                        "error": "تاريخ الإرسال غير صحيح."
+                    },
+                    status_code=400
+                )
 
         parsed_expected_return_date = None
 
         if expected_return_date:
 
             try:
-                parsed_expected_return_date = date.fromisoformat(
-                    expected_return_date
+
+                parsed_expected_return_date = (
+                    date.fromisoformat(
+                        expected_return_date
+                    )
                 )
+
             except ValueError:
-                return error_response(
-                    "تاريخ العودة المتوقع غير صحيح."
+
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/workshop_form.html",
+                    context={
+                        "equipment_list": equipment_list,
+                        "error": "تاريخ العودة المتوقع غير صحيح."
+                    },
+                    status_code=400
                 )
 
-            if parsed_expected_return_date < parsed_dispatch_date:
-                return error_response(
-                    "تاريخ العودة المتوقع لا يمكن أن يكون قبل تاريخ الإرسال."
-                )
+            if (
+                parsed_expected_return_date
+                < parsed_dispatch_date
+            ):
 
-        # -------------------------------------------------
-        # منع وجود تحويل ورشة مفتوح
-        # -------------------------------------------------
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/workshop_form.html",
+                    context={
+                        "equipment_list": equipment_list,
+                        "error": (
+                            "تاريخ العودة المتوقع لا يمكن "
+                            "أن يكون قبل تاريخ الإرسال."
+                        )
+                    },
+                    status_code=400
+                )
 
         active_transfer = (
             db.query(WorkshopTransfer)
             .filter(
-                WorkshopTransfer.equipment_id == equipment_id,
-                WorkshopTransfer.status == "في الورشة"
+                WorkshopTransfer.equipment_id
+                == equipment_id,
+                WorkshopTransfer.status
+                == "في الورشة"
             )
             .first()
         )
 
         if active_transfer:
-            return error_response(
-                "هذا العتاد موجود حاليًا في ورشة خارجية "
-                "ولا يمكن إرساله مرة أخرى."
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/workshop_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "error": (
+                        "هذا العتاد موجود حاليًا في ورشة "
+                        "خارجية ولا يمكن إرساله مرة أخرى."
+                    )
+                },
+                status_code=400
             )
 
         new_transfer = WorkshopTransfer(
@@ -1525,7 +1904,9 @@ def create_workshop_transfer(
             workshop_name=workshop_name,
             dispatch_document=dispatch_document,
             dispatch_date=parsed_dispatch_date,
-            expected_return_date=parsed_expected_return_date,
+            expected_return_date=(
+                parsed_expected_return_date
+            ),
             actual_return_date=None,
             reason=reason,
             status="في الورشة",
@@ -1534,7 +1915,7 @@ def create_workshop_transfer(
 
         db.add(new_transfer)
 
-        equipment.status = WORKSHOP_EQUIPMENT_STATUS
+        equipment.status = "في ورشة خارجية"
 
         db.commit()
 
@@ -1574,12 +1955,14 @@ def return_from_workshop(
         )
 
         if transfer is None:
+
             return RedirectResponse(
                 url="/workshops",
                 status_code=303
             )
 
         if transfer.status != "في الورشة":
+
             return RedirectResponse(
                 url="/workshops",
                 status_code=303
@@ -1591,12 +1974,14 @@ def return_from_workshop(
         equipment = (
             db.query(Equipment)
             .filter(
-                Equipment.id == transfer.equipment_id
+                Equipment.id
+                == transfer.equipment_id
             )
             .first()
         )
 
         if equipment is not None:
+
             equipment.status = "متاحة"
 
         db.commit()

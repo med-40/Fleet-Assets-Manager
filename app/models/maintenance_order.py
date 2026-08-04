@@ -17,26 +17,28 @@ class MaintenanceOrder(Base):
         primary_key=True
     )
 
-    # السيارة / العتاد
+    # العتاد
     equipment_id = Column(
         Integer,
         ForeignKey("equipment.id"),
         nullable=False
     )
 
-    # نوع عملية الصيانة
-    # مثال:
-    # إصلاح عطل
-    # صيانة دورية
-    # فحص
-    # تشخيص
-    # استبدال قطعة
-    maintenance_type = Column(
-        String(100),
+    # العملية المعرفة مسبقًا
+    maintenance_type_id = Column(
+        Integer,
+        ForeignKey("maintenance_types.id"),
         nullable=False
     )
 
-    # وصف العمل أو العطل
+    # قراءة العداد وقت تنفيذ الصيانة
+    meter_reading_id = Column(
+        Integer,
+        ForeignKey("meter_readings.id"),
+        nullable=True
+    )
+
+    # وصف إضافي
     description = Column(
         String(500)
     )
@@ -51,21 +53,28 @@ class MaintenanceOrder(Base):
         Date
     )
 
-    # حالة الصيانة
-    # جارية / منتهية / ملغاة
+    # الحالة
     status = Column(
         String(50),
         default="جارية",
         nullable=False
     )
 
-    # الملاحظات
+    # ملاحظات
     notes = Column(
         String(500)
     )
 
-    # العلاقة مع العتاد
+    # العلاقات
     equipment = relationship(
         "Equipment",
         back_populates="maintenance_orders"
+    )
+
+    maintenance_type = relationship(
+        "MaintenanceType"
+    )
+
+    meter_reading = relationship(
+        "MeterReading"
     )

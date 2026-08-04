@@ -1028,3 +1028,375 @@ def complete_maintenance(
 
     finally:
         db.close()
+        
+# =========================================================
+# الورشات الخارجية
+# =========================================================
+#
+# هذا القسم مستقل عن MaintenanceOrder.
+#
+# MaintenanceOrder:
+#     صيانة داخل المؤسسة
+#
+# WorkshopTransfer:
+#     إرسال العتاد إلى ورشة خارج المؤسسة وتتبع عودته.
+#
+# =========================================================
+
+
+# =========================================================
+# قائمة الورشات الخارجية
+# =========================================================
+
+@app.get("/workshops")
+def workshops_page(request: Request):
+
+    db = SessionLocal()
+
+    try:
+
+        workshop_transfers = (
+            db.query(WorkshopTransfer)
+            .order_by(
+                WorkshopTransfer.dispatch_date.desc()
+            )
+            .all()
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="pages/workshops.html",
+            context={
+                "workshop_transfers": workshop_transfers
+            }
+        )
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# إضافة إرسال إلى ورشة خارجية - صفحة النموذج
+# =========================================================
+
+@app.get("/workshops/new")
+def new_workshop_transfer_page(request: Request):
+
+    db = SessionLocal()
+
+    try:
+
+        equipment_list = (
+            db.query(Equipment)
+            .order_by(
+                Equipment.registration_number
+            )
+            .all()
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="pages/workshop_form.html",
+            context={
+                "equipment_list": equipment_list,
+                "error": None
+            }
+        )
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# إضافة إرسال إلى ورشة خارجية - حفظ
+# =========================================================
+
+@app.post("/workshops/new")
+def create_workshop_transfer(
+    request: Request,
+    equipment_id: int = Form(...),
+    workshop_name: str = Form(...),
+    dispatch_document: str = Form(...),
+    dispatch_date: str = Form(""),
+    expected_return_date: str = Form(""),
+    reason: str = Form(""),
+    notes: str = Form("")
+):
+
+    db = SessionLocal()
+
+    try:
+
+        workshop_name = workshop_name.strip()
+        dispatch_document = dispatch_document.strip()
+        dispatch_date = dispatch_date.strip()
+        expected_return_date = expected_return_date.strip()
+        reason = reason.strip()
+        notes = notes.strip()
+
+        equipment_list = (
+            db.query(Equipment)
+            .order_by(
+                Equipment.registration_number
+            )
+            .all()
+        )
+
+        # -------------------------------------------------
+        # التحقق من اسم الورشة
+        # -------------------------------------------------
+
+        if not workshop_name:
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/workshop_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "error": "اسم الورشة مطلوب."
+                },
+                status_code=400
+            )
+
+        # -------------------------------------------------
+        # التحقق من وثيقة الإرسال
+        # -------------------------------------------------
+
+        if not dispatch_document:
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/workshop_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "error": "وثيقة الإرسال مطلوبة."
+                },
+                status_code=400
+            )
+
+        # -------------------------------------------------
+        # التحقق من العتاد
+        # -------------------------------------------------
+
+        equipment = (
+            db.query(Equipment)
+            .filter(
+                Equipment.id == equipment_id
+            )
+            .first()
+        )
+
+        if equipment is None:
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/workshop_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "error": "السيارة / العتاد غير موجود."
+                },
+                status_code=400
+            )
+
+        # -------------------------------------------------
+        # تاريخ الإرسال
+        # -------------------------------------------------
+
+        parsed_dispatch_date = date.today()
+
+        if dispatch_date:
+
+            try:
+
+                parsed_dispatch_date = date.fromisoformat(
+                    dispatch_date
+                )
+
+            except ValueError:
+
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/workshop_form.html",
+                    context={
+                        "equipment_list": equipment_list,
+                        "error": "تاريخ الإرسال غير صحيح."
+                    },
+                    status_code=400
+                )
+
+        # -------------------------------------------------
+        # تاريخ العودة المتوقع
+        # -------------------------------------------------
+
+        parsed_expected_return_date = None
+
+        if expected_return_date:
+
+            try:
+
+                parsed_expected_return_date = date.fromisoformat(
+                    expected_return_date
+                )
+
+            except ValueError:
+
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/workshop_form.html",
+                    context={
+                        "equipment_list": equipment_list,
+                        "error": "تاريخ العودة المتوقع غير صحيح."
+                    },
+                    status_code=400
+                )
+
+            if parsed_expected_return_date < parsed_dispatch_date:
+
+                return templates.TemplateResponse(
+                    request=request,
+                    name="pages/workshop_form.html",
+                    context={
+                        "equipment_list": equipment_list,
+                        "error": (
+                            "تاريخ العودة المتوقع لا يمكن "
+                            "أن يكون قبل تاريخ الإرسال."
+                        )
+                    },
+                    status_code=400
+                )
+
+        # -------------------------------------------------
+        # منع إرسال عتاد موجود أصلًا في ورشة
+        # -------------------------------------------------
+
+        active_transfer = (
+            db.query(WorkshopTransfer)
+            .filter(
+                WorkshopTransfer.equipment_id == equipment_id,
+                WorkshopTransfer.status == "في الورشة"
+            )
+            .first()
+        )
+
+        if active_transfer:
+
+            return templates.TemplateResponse(
+                request=request,
+                name="pages/workshop_form.html",
+                context={
+                    "equipment_list": equipment_list,
+                    "error": (
+                        "هذا العتاد موجود حاليًا في ورشة خارجية "
+                        "ولا يمكن إرساله مرة أخرى."
+                    )
+                },
+                status_code=400
+            )
+
+        # -------------------------------------------------
+        # إنشاء سجل الورشة الخارجية
+        # -------------------------------------------------
+
+        new_transfer = WorkshopTransfer(
+            equipment_id=equipment_id,
+            workshop_name=workshop_name,
+            dispatch_document=dispatch_document,
+            dispatch_date=parsed_dispatch_date,
+            expected_return_date=parsed_expected_return_date,
+            reason=reason,
+            status="في الورشة",
+            notes=notes
+        )
+
+        db.add(new_transfer)
+
+        # -------------------------------------------------
+        # تغيير حالة العتاد تلقائيًا
+        # -------------------------------------------------
+
+        equipment.status = "في ورشة خارجية"
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/workshops",
+            status_code=303
+        )
+
+    finally:
+        db.close()
+
+
+# =========================================================
+# تسجيل عودة العتاد من الورشة الخارجية
+# =========================================================
+
+@app.post("/workshops/{transfer_id}/return")
+def return_from_workshop(
+    transfer_id: int
+):
+
+    db = SessionLocal()
+
+    try:
+
+        transfer = (
+            db.query(WorkshopTransfer)
+            .filter(
+                WorkshopTransfer.id == transfer_id
+            )
+            .first()
+        )
+
+        if transfer is None:
+
+            return RedirectResponse(
+                url="/workshops",
+                status_code=303
+            )
+
+        # -------------------------------------------------
+        # إذا عاد العتاد سابقًا
+        # -------------------------------------------------
+
+        if transfer.status == "عاد":
+
+            return RedirectResponse(
+                url="/workshops",
+                status_code=303
+            )
+
+        # -------------------------------------------------
+        # تسجيل العودة
+        # -------------------------------------------------
+
+        transfer.actual_return_date = date.today()
+        transfer.status = "عاد"
+
+        # -------------------------------------------------
+        # إعادة حالة العتاد
+        # -------------------------------------------------
+
+        equipment = (
+            db.query(Equipment)
+            .filter(
+                Equipment.id == transfer.equipment_id
+            )
+            .first()
+        )
+
+        if equipment is not None:
+
+            if equipment.status == "في ورشة خارجية":
+
+                equipment.status = "متاحة"
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/workshops",
+            status_code=303
+        )
+
+    finally:
+        db.close()

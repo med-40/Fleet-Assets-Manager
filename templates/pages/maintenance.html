@@ -13,6 +13,7 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 25px;
+        gap: 20px;
     }
 
     .page-header h1 {
@@ -23,6 +24,12 @@
     .page-header p {
         margin: 8px 0 0;
         color: #666;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
     }
 
     .add-button {
@@ -37,6 +44,20 @@
 
     .add-button:hover {
         background: #157347;
+    }
+
+    .schedule-button {
+        display: inline-block;
+        padding: 11px 20px;
+        background: #0d6efd;
+        color: white;
+        text-decoration: none;
+        border-radius: 7px;
+        font-weight: bold;
+    }
+
+    .schedule-button:hover {
+        background: #0b5ed7;
     }
 
     .table-container {
@@ -64,6 +85,7 @@
         border-bottom: 1px solid #e5e5e5;
         text-align: right;
         white-space: nowrap;
+        vertical-align: middle;
     }
 
     tr:hover td {
@@ -78,12 +100,7 @@
         background: #eeeeee;
     }
 
-    .status-inside {
-        background: #cfe2ff;
-        color: #084298;
-    }
-
-    .status-outside {
+    .status-active {
         background: #fff3cd;
         color: #664d03;
     }
@@ -93,9 +110,28 @@
         color: #0f5132;
     }
 
-    .document {
+    .status-cancelled {
+        background: #f8d7da;
+        color: #842029;
+    }
+
+    .status-scheduled {
+        background: #cfe2ff;
+        color: #084298;
+    }
+
+    .equipment-name {
         font-weight: bold;
         color: #333;
+    }
+
+    .schedule-name {
+        color: #0d6efd;
+        font-weight: bold;
+    }
+
+    .meter {
+        font-weight: bold;
     }
 
     .empty {
@@ -104,22 +140,47 @@
         color: #777;
     }
 
-</style>
+    .section-note {
+        margin-bottom: 15px;
+        padding: 12px 15px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        color: #555;
+    }
+
+    @media (max-width: 700px) {
+
+        .page-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .header-actions {
+            width: 100%;
+        }
+
+        .add-button,
+        .schedule-button {
+            text-align: center;
+        }
+
+    }
+
+</style><div class="page-header"><div>
+
+    <h1>
+        الصيانة الداخلية
+    </h1>
+
+    <p>
+        متابعة عمليات الصيانة والإصلاح التي تتم داخل المؤسسة
+    </p>
+
+</div>
 
 
-<div class="page-header">
-
-    <div>
-
-        <h1>
-            الصيانة
-        </h1>
-
-        <p>
-            متابعة عمليات صيانة وإرسال العتاد إلى الورش
-        </p>
-
-    </div>
+<div class="header-actions">
 
     <a
         href="/maintenance/new"
@@ -128,210 +189,270 @@
         + إضافة صيانة
     </a>
 
+    <a
+        href="/maintenance-schedules"
+        class="schedule-button"
+    >
+        خطط الصيانة
+    </a>
+
 </div>
 
+</div><div class="section-note">هذه الصفحة مخصصة للصيانة التي تتم داخل المؤسسة.
+أما العتاد المرسل إلى ورشة خارجية فيتم تسجيله ومتابعته من قسم
+<strong>الورش الخارجية</strong>.
 
-<div class="table-container">
+</div><div class="table-container">{% if maintenance_orders %}
 
-    {% if maintenance_orders %}
+<table>
 
-    <table>
+    <thead>
 
-        <thead>
+        <tr>
 
-            <tr>
+            <th>
+                السيارة / العتاد
+            </th>
 
-                <th>السيارة / العتاد</th>
+            <th>
+                عملية الصيانة
+            </th>
 
-                <th>نوع الورشة</th>
+            <th>
+                خطة الصيانة
+            </th>
 
-                <th>الورشة الخارجية</th>
+            <th>
+                قراءة العداد
+            </th>
 
-                <th>سبب الإرسال</th>
+            <th>
+                تاريخ البداية
+            </th>
 
-                <th>وثيقة الإرسال</th>
+            <th>
+                تاريخ الانتهاء
+            </th>
 
-                <th>تاريخ الإرسال</th>
+            <th>
+                الحالة
+            </th>
 
-                <th>تاريخ الإرجاع</th>
+            <th>
+                وصف العمل / العطل
+            </th>
 
-                <th>الحالة</th>
+            <th>
+                الملاحظات
+            </th>
 
-                <th>الملاحظات</th>
+        </tr>
 
-            </tr>
-
-        </thead>
+    </thead>
 
 
-        <tbody>
+    <tbody>
 
-            {% for order in maintenance_orders %}
+        {% for order in maintenance_orders %}
 
-            <tr>
+        <tr>
 
-                <!-- السيارة / العتاد -->
 
-                <td>
+            <!-- ========================================= -->
+            <!-- السيارة / العتاد -->
+            <!-- ========================================= -->
 
-                    {% if order.equipment %}
+            <td>
+
+                {% if order.equipment %}
+
+                    <span class="equipment-name">
 
                         {{ order.equipment.registration_number }}
 
-                        {% if order.equipment.model %}
+                    </span>
 
-                            — {{ order.equipment.model }}
+                    {% if order.equipment.model %}
 
-                        {% endif %}
-
-                    {% else %}
-
-                        -
+                        — {{ order.equipment.model }}
 
                     {% endif %}
 
-                </td>
+                {% else %}
 
+                    -
 
-                <!-- نوع الورشة -->
+                {% endif %}
 
-                <td>
+            </td>
 
-                    {% if order.workshop_type == "داخل المؤسسة" %}
 
-                        <span class="status status-inside">
-                            داخل المؤسسة
-                        </span>
+            <!-- ========================================= -->
+            <!-- عملية الصيانة -->
+            <!-- ========================================= -->
 
-                    {% elif order.workshop_type == "خارج المؤسسة" %}
+            <td>
 
-                        <span class="status status-outside">
-                            خارج المؤسسة
-                        </span>
+                {{ order.maintenance_type or "-" }}
 
-                    {% else %}
+            </td>
 
-                        {{ order.workshop_type or "-" }}
 
-                    {% endif %}
+            <!-- ========================================= -->
+            <!-- خطة الصيانة -->
+            <!-- ========================================= -->
 
-                </td>
+            <td>
 
+                {% if order.maintenance_schedule %}
 
-                <!-- اسم الورشة الخارجية -->
+                    <span class="schedule-name">
 
-                <td>
+                        {{ order.maintenance_schedule.name }}
 
-                    {{ order.workshop_name or "-" }}
+                    </span>
 
-                </td>
+                {% else %}
 
+                    <span class="status">
 
-                <!-- سبب الإرسال -->
+                        صيانة طارئة
 
-                <td>
+                    </span>
 
-                    {{ order.reason or "-" }}
+                {% endif %}
 
-                </td>
+            </td>
 
 
-                <!-- وثيقة الإرسال -->
+            <!-- ========================================= -->
+            <!-- قراءة العداد -->
+            <!-- ========================================= -->
 
-                <td>
+            <td>
 
-                    {% if order.dispatch_document %}
+                {% if order.meter_reading is not none %}
 
-                        <span class="document">
-                            {{ order.dispatch_document }}
-                        </span>
+                    <span class="meter">
 
-                    {% else %}
+                        {{ order.meter_reading }}
 
-                        -
+                        كم
 
-                    {% endif %}
+                    </span>
 
-                </td>
+                {% else %}
 
+                    -
 
-                <!-- تاريخ الإرسال -->
+                {% endif %}
 
-                <td>
+            </td>
 
-                    {{ order.dispatch_date or "-" }}
 
-                </td>
+            <!-- ========================================= -->
+            <!-- تاريخ البداية -->
+            <!-- ========================================= -->
 
+            <td>
 
-                <!-- تاريخ الإرجاع -->
+                {{ order.maintenance_date or "-" }}
 
-                <td>
+            </td>
 
-                    {{ order.return_date or "-" }}
 
-                </td>
+            <!-- ========================================= -->
+            <!-- تاريخ الانتهاء -->
+            <!-- ========================================= -->
 
+            <td>
 
-                <!-- الحالة -->
+                {{ order.completion_date or "-" }}
 
-                <td>
+            </td>
 
-                    {% if order.status in ["خارج المؤسسة", "جارية", "Active"] %}
 
-                        <span class="status status-outside">
-                            {{ order.status }}
-                        </span>
+            <!-- ========================================= -->
+            <!-- الحالة -->
+            <!-- ========================================= -->
 
-                    {% elif order.status in ["منتهية", "مكتملة", "Completed"] %}
+            <td>
 
-                        <span class="status status-completed">
-                            {{ order.status }}
-                        </span>
+                {% if order.status == "جارية" %}
 
-                    {% elif order.status in ["داخل المؤسسة"] %}
+                    <span class="status status-active">
 
-                        <span class="status status-inside">
-                            {{ order.status }}
-                        </span>
+                        جارية
 
-                    {% else %}
+                    </span>
 
-                        <span class="status">
-                            {{ order.status or "-" }}
-                        </span>
+                {% elif order.status == "منتهية" %}
 
-                    {% endif %}
+                    <span class="status status-completed">
 
-                </td>
+                        منتهية
 
+                    </span>
 
-                <!-- الملاحظات -->
+                {% elif order.status == "ملغاة" %}
 
-                <td>
+                    <span class="status status-cancelled">
 
-                    {{ order.notes or "-" }}
+                        ملغاة
 
-                </td>
+                    </span>
 
-            </tr>
+                {% else %}
 
-            {% endfor %}
+                    <span class="status">
 
-        </tbody>
+                        {{ order.status or "-" }}
 
-    </table>
+                    </span>
 
-    {% else %}
+                {% endif %}
 
-    <div class="empty">
+            </td>
 
-        لا توجد عمليات صيانة مسجلة حاليًا.
 
-    </div>
+            <!-- ========================================= -->
+            <!-- الوصف -->
+            <!-- ========================================= -->
 
-    {% endif %}
+            <td>
+
+                {{ order.description or "-" }}
+
+            </td>
+
+
+            <!-- ========================================= -->
+            <!-- الملاحظات -->
+            <!-- ========================================= -->
+
+            <td>
+
+                {{ order.notes or "-" }}
+
+            </td>
+
+
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% else %}
+
+<div class="empty">
+
+    لا توجد عمليات صيانة داخلية مسجلة حاليًا.
 
 </div>
 
-{% endblock %}
+{% endif %}
+
+</div>{% endblock %}

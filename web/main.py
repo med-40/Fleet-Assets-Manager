@@ -14,11 +14,21 @@ from app.models.driver import Driver
 from app.models.mission import Mission
 
 from app.models.maintenance_order import MaintenanceOrder
-from app.models.maintenance_type import MaintenanceType
 from app.models.maintenance_schedule import MaintenanceSchedule
 from app.models.meter_reading import MeterReading
 
 from app.models.workshop_transfer import WorkshopTransfer
+
+
+# =========================================================
+# إنشاء تطبيق FastAPI
+# =========================================================
+
+app = FastAPI(
+    title="Fleet Assets Manager",
+    description="نظام تسيير الحضيرة",
+    version="1.0.0"
+)
 
 
 # =========================================================
@@ -41,6 +51,13 @@ templates = Jinja2Templates(
 
 @app.get("/")
 def home():
+
+    if not INDEX_FILE.exists():
+        return {
+            "error": "ملف templates/index.html غير موجود",
+            "expected_path": str(INDEX_FILE)
+        }
+
     return FileResponse(INDEX_FILE)
 
 
@@ -50,6 +67,7 @@ def home():
 
 @app.get("/health")
 def health():
+
     return {
         "status": "ok"
     }
@@ -74,6 +92,7 @@ def dashboard(request: Request):
         tires = 0
 
         try:
+
             vehicles = db.execute(
                 text(
                     "SELECT COUNT(*) FROM equipment"
@@ -81,9 +100,11 @@ def dashboard(request: Request):
             ).scalar() or 0
 
         except Exception:
+
             vehicles = 0
 
         try:
+
             active_missions = db.execute(
                 text(
                     """
@@ -99,9 +120,11 @@ def dashboard(request: Request):
             ).scalar() or 0
 
         except Exception:
+
             active_missions = 0
 
         try:
+
             due_maintenance = db.execute(
                 text(
                     """
@@ -116,9 +139,11 @@ def dashboard(request: Request):
             ).scalar() or 0
 
         except Exception:
+
             due_maintenance = 0
 
         try:
+
             monthly_fuel = db.execute(
                 text(
                     """
@@ -132,9 +157,11 @@ def dashboard(request: Request):
             ).scalar() or 0
 
         except Exception:
+
             monthly_fuel = 0
 
         try:
+
             batteries = db.execute(
                 text(
                     """
@@ -145,9 +172,11 @@ def dashboard(request: Request):
             ).scalar() or 0
 
         except Exception:
+
             batteries = 0
 
         try:
+
             tires = db.execute(
                 text(
                     """
@@ -158,6 +187,7 @@ def dashboard(request: Request):
             ).scalar() or 0
 
         except Exception:
+
             tires = 0
 
         return templates.TemplateResponse(
@@ -176,6 +206,7 @@ def dashboard(request: Request):
         )
 
     finally:
+
         db.close()
 
 
@@ -207,6 +238,7 @@ def equipment_page(request: Request):
         )
 
     finally:
+
         db.close()
 
 
@@ -238,6 +270,7 @@ def equipment_types_list():
         ]
 
     finally:
+
         db.close()
 
 
@@ -270,6 +303,7 @@ def new_equipment_page(request: Request):
         )
 
     finally:
+
         db.close()
 
 
@@ -449,6 +483,7 @@ def create_equipment(
         raise
 
     finally:
+
         db.close()
 
 
@@ -480,6 +515,7 @@ def missions_page(request: Request):
         )
 
     finally:
+
         db.close()
 
 
@@ -546,6 +582,7 @@ def new_mission_page(request: Request):
         )
 
     finally:
+
         db.close()
 
 
@@ -749,6 +786,7 @@ def create_mission(
         raise
 
     finally:
+
         db.close()
 
 
@@ -821,6 +859,7 @@ def complete_mission(mission_id: int):
         raise
 
     finally:
+
         db.close()
 
 
@@ -852,6 +891,7 @@ def maintenance_page(request: Request):
         )
 
     finally:
+
         db.close()
 
 
@@ -884,6 +924,7 @@ def new_maintenance_page(request: Request):
         )
 
     finally:
+
         db.close()
 
 
@@ -941,6 +982,7 @@ def get_equipment_maintenance_schedules(
         ]
 
     finally:
+
         db.close()
 
 
@@ -1050,750 +1092,4 @@ def create_meter_reading(
     reading_date
 ):
 
-    new_reading = MeterReading(
-        equipment_id=equipment_id,
-        reading_value=reading_value,
-        reading_date=reading_date
-    )
-
-    db.add(new_reading)
-
-    db.flush()
-
-    return new_reading
-
-
-# =========================================================
-# الحصول على آخر قراءة عداد
-# =========================================================
-
-def get_last_meter_reading(
-    db,
-    equipment_id
-):
-
-    return (
-        db.query(MeterReading)
-        .filter(
-            MeterReading.equipment_id
-            == equipment_id
-        )
-        .order_by(
-            MeterReading.reading_value.desc()
-        )
-        .first()
-    )
-
-
-# =========================================================
-# إضافة صيانة داخل المؤسسة - حفظ
-# =========================================================
-
-@app.post("/maintenance/new")
-def create_maintenance(
-    request: Request,
-    equipment_id: int = Form(...),
-    maintenance_schedule_id: int = Form(...),
-    meter_reading: str = Form(""),
-    description: str = Form(""),
-    maintenance_date: str = Form(""),
-    completion_date: str = Form(""),
-    status: str = Form("جارية"),
-    notes: str = Form("")
-):
-
-    db = SessionLocal()
-
-    try:
-
-        description = description.strip()
-        maintenance_date = maintenance_date.strip()
-        completion_date = completion_date.strip()
-        status = status.strip()
-        notes = notes.strip()
-        meter_reading = meter_reading.strip()
-
-        equipment_list = (
-            db.query(Equipment)
-            .order_by(
-                Equipment.registration_number
-            )
-            .all()
-        )
-
-        # -------------------------------------------------
-        # التحقق من العتاد
-        # -------------------------------------------------
-
-        equipment = (
-            db.query(Equipment)
-            .filter(
-                Equipment.id == equipment_id
-            )
-            .first()
-        )
-
-        if equipment is None:
-
-            return maintenance_error_response(
-                request,
-                equipment_list,
-                "السيارة / العتاد غير موجود."
-            )
-
-        # -------------------------------------------------
-        # التحقق من خطة الصيانة
-        # -------------------------------------------------
-
-        schedule = get_maintenance_schedule(
-            db=db,
-            schedule_id=maintenance_schedule_id
-        )
-
-        if schedule is None:
-
-            return maintenance_error_response(
-                request,
-                equipment_list,
-                "خطة الصيانة المحددة غير موجودة."
-            )
-
-        # -------------------------------------------------
-        # التأكد أن الخطة تخص العتاد المختار
-        # -------------------------------------------------
-
-        if schedule.equipment_id != equipment_id:
-
-            return maintenance_error_response(
-                request,
-                equipment_list,
-                (
-                    "خطة الصيانة المختارة لا تخص "
-                    "العتاد المحدد."
-                )
-            )
-
-        if not schedule.name.strip():
-
-            return maintenance_error_response(
-                request,
-                equipment_list,
-                "اسم خطة الصيانة غير صالح."
-            )
-
-        # -------------------------------------------------
-        # التحقق من الحالة
-        # -------------------------------------------------
-
-        allowed_statuses = (
-            "جارية",
-            "منتهية",
-            "ملغاة"
-        )
-
-        if status not in allowed_statuses:
-
-            return maintenance_error_response(
-                request,
-                equipment_list,
-                "حالة الصيانة غير صحيحة."
-            )
-
-        # -------------------------------------------------
-        # تاريخ بداية الصيانة
-        # -------------------------------------------------
-
-        parsed_maintenance_date = date.today()
-
-        if maintenance_date:
-
-            try:
-
-                parsed_maintenance_date = (
-                    date.fromisoformat(
-                        maintenance_date
-                    )
-                )
-
-            except ValueError:
-
-                return maintenance_error_response(
-                    request,
-                    equipment_list,
-                    "تاريخ الصيانة غير صحيح."
-                )
-
-        # -------------------------------------------------
-        # تاريخ انتهاء الصيانة
-        # -------------------------------------------------
-
-        parsed_completion_date = None
-
-        if completion_date:
-
-            try:
-
-                parsed_completion_date = (
-                    date.fromisoformat(
-                        completion_date
-                    )
-                )
-
-            except ValueError:
-
-                return maintenance_error_response(
-                    request,
-                    equipment_list,
-                    "تاريخ انتهاء الصيانة غير صحيح."
-                )
-
-            if (
-                parsed_completion_date
-                < parsed_maintenance_date
-            ):
-
-                return maintenance_error_response(
-                    request,
-                    equipment_list,
-                    (
-                        "تاريخ انتهاء الصيانة لا يمكن "
-                        "أن يكون قبل تاريخ بدايتها."
-                    )
-                )
-
-        # -------------------------------------------------
-        # إذا كانت الصيانة منتهية
-        # -------------------------------------------------
-
-        if (
-            status == "منتهية"
-            and parsed_completion_date is None
-        ):
-
-            parsed_completion_date = date.today()
-
-        # -------------------------------------------------
-        # قراءة العداد
-        # -------------------------------------------------
-
-        parsed_meter_reading = None
-
-        if meter_reading:
-
-            try:
-
-                parsed_meter_reading = int(
-                    meter_reading
-                )
-
-            except ValueError:
-
-                return maintenance_error_response(
-                    request,
-                    equipment_list,
-                    "قراءة العداد يجب أن تكون رقمًا صحيحًا."
-                )
-
-            if parsed_meter_reading < 0:
-
-                return maintenance_error_response(
-                    request,
-                    equipment_list,
-                    "قراءة العداد لا يمكن أن تكون سالبة."
-                )
-
-        # -------------------------------------------------
-        # الصيانة المنتهية تحتاج قراءة عداد
-        # -------------------------------------------------
-
-        if (
-            status == "منتهية"
-            and parsed_meter_reading is None
-        ):
-
-            return maintenance_error_response(
-                request,
-                equipment_list,
-                (
-                    "يجب إدخال قراءة العداد عند تسجيل "
-                    "الصيانة كمنتهية."
-                )
-            )
-
-        # -------------------------------------------------
-        # منع انخفاض العداد
-        # -------------------------------------------------
-
-        if parsed_meter_reading is not None:
-
-            last_meter_reading = get_last_meter_reading(
-                db=db,
-                equipment_id=equipment_id
-            )
-
-            if (
-                last_meter_reading is not None
-                and parsed_meter_reading
-                < last_meter_reading.reading_value
-            ):
-
-                return maintenance_error_response(
-                    request,
-                    equipment_list,
-                    (
-                        "قراءة العداد الجديدة أقل من آخر "
-                        "قراءة مسجلة "
-                        f"({last_meter_reading.reading_value} كم)."
-                    )
-                )
-
-        # -------------------------------------------------
-        # إنشاء قراءة العداد
-        # -------------------------------------------------
-
-        if parsed_meter_reading is not None:
-
-            create_meter_reading(
-                db=db,
-                equipment_id=equipment_id,
-                reading_value=parsed_meter_reading,
-                reading_date=(
-                    parsed_completion_date
-                    or parsed_maintenance_date
-                )
-            )
-
-        # -------------------------------------------------
-        # إنشاء سجل الصيانة
-        # -------------------------------------------------
-
-        new_maintenance = MaintenanceOrder(
-            equipment_id=equipment_id,
-
-            # الربط المباشر بالخطة
-            maintenance_schedule_id=schedule.id,
-
-            # اسم العملية يبقى محفوظًا في السجل
-            maintenance_type=schedule.name.strip(),
-
-            description=description,
-
-            maintenance_date=parsed_maintenance_date,
-
-            completion_date=parsed_completion_date,
-
-            meter_reading=parsed_meter_reading,
-
-            status=status,
-
-            notes=notes
-        )
-
-        db.add(new_maintenance)
-
-        # -------------------------------------------------
-        # تحديث الخطة عند انتهاء الصيانة
-        # -------------------------------------------------
-
-        if status == "منتهية":
-
-            update_maintenance_schedule_after_completion(
-                db=db,
-                schedule=schedule,
-                completion_date=(
-                    parsed_completion_date
-                    or date.today()
-                ),
-                meter_reading=parsed_meter_reading
-            )
-
-        # -------------------------------------------------
-        # حالة العتاد
-        # -------------------------------------------------
-
-        if status == "جارية":
-
-            equipment.status = "في الصيانة"
-
-        elif status == "منتهية":
-
-            equipment.status = "متاحة"
-
-        elif status == "ملغاة":
-
-            if equipment.status == "في الصيانة":
-
-                equipment.status = "متاحة"
-
-        # -------------------------------------------------
-        # حفظ
-        # -------------------------------------------------
-
-        db.commit()
-
-        return RedirectResponse(
-            url="/maintenance",
-            status_code=303
-        )
-
-    except Exception:
-
-        db.rollback()
-        raise
-
-    finally:
-        db.close()
-
-
-# =========================================================
-# الورشة الخارجية - القائمة
-# =========================================================
-
-@app.get("/workshops")
-def workshops_page(request: Request):
-
-    db = SessionLocal()
-
-    try:
-
-        transfers = (
-            db.query(WorkshopTransfer)
-            .order_by(
-                WorkshopTransfer.dispatch_date.desc()
-            )
-            .all()
-        )
-
-        return templates.TemplateResponse(
-            request=request,
-            name="pages/workshops.html",
-            context={
-                "transfers": transfers
-            }
-        )
-
-    finally:
-        db.close()
-
-
-# =========================================================
-# إرسال عتاد إلى ورشة خارجية - صفحة النموذج
-# =========================================================
-
-@app.get("/workshops/new")
-def new_workshop_page(request: Request):
-
-    db = SessionLocal()
-
-    try:
-
-        equipment_list = (
-            db.query(Equipment)
-            .order_by(
-                Equipment.registration_number
-            )
-            .all()
-        )
-
-        return templates.TemplateResponse(
-            request=request,
-            name="pages/workshop_form.html",
-            context={
-                "equipment_list": equipment_list,
-                "error": None
-            }
-        )
-
-    finally:
-        db.close()
-
-
-# =========================================================
-# إرسال عتاد إلى ورشة خارجية - حفظ
-# =========================================================
-
-@app.post("/workshops/new")
-def create_workshop_transfer(
-    request: Request,
-    equipment_id: int = Form(...),
-    workshop_name: str = Form(...),
-    dispatch_document: str = Form(...),
-    dispatch_date: str = Form(""),
-    expected_return_date: str = Form(""),
-    reason: str = Form(""),
-    notes: str = Form("")
-):
-
-    db = SessionLocal()
-
-    try:
-
-        workshop_name = workshop_name.strip()
-        dispatch_document = dispatch_document.strip()
-        dispatch_date = dispatch_date.strip()
-        expected_return_date = expected_return_date.strip()
-        reason = reason.strip()
-        notes = notes.strip()
-
-        equipment_list = (
-            db.query(Equipment)
-            .order_by(
-                Equipment.registration_number
-            )
-            .all()
-        )
-
-        if not workshop_name:
-
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/workshop_form.html",
-                context={
-                    "equipment_list": equipment_list,
-                    "error": "اسم الورشة مطلوب."
-                },
-                status_code=400
-            )
-
-        if not dispatch_document:
-
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/workshop_form.html",
-                context={
-                    "equipment_list": equipment_list,
-                    "error": "وثيقة الإرسال مطلوبة."
-                },
-                status_code=400
-            )
-
-        equipment = (
-            db.query(Equipment)
-            .filter(
-                Equipment.id == equipment_id
-            )
-            .first()
-        )
-
-        if equipment is None:
-
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/workshop_form.html",
-                context={
-                    "equipment_list": equipment_list,
-                    "error": "السيارة / العتاد غير موجود."
-                },
-                status_code=400
-            )
-
-        if equipment.status not in (
-            "متاحة",
-            "Available",
-            "Active"
-        ):
-
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/workshop_form.html",
-                context={
-                    "equipment_list": equipment_list,
-                    "error": (
-                        "لا يمكن إرسال هذا العتاد إلى الورشة "
-                        f"لأن حالته الحالية هي: "
-                        f"{equipment.status or 'غير محددة'}."
-                    )
-                },
-                status_code=400
-            )
-
-        parsed_dispatch_date = date.today()
-
-        if dispatch_date:
-
-            try:
-
-                parsed_dispatch_date = (
-                    date.fromisoformat(
-                        dispatch_date
-                    )
-                )
-
-            except ValueError:
-
-                return templates.TemplateResponse(
-                    request=request,
-                    name="pages/workshop_form.html",
-                    context={
-                        "equipment_list": equipment_list,
-                        "error": "تاريخ الإرسال غير صحيح."
-                    },
-                    status_code=400
-                )
-
-        parsed_expected_return_date = None
-
-        if expected_return_date:
-
-            try:
-
-                parsed_expected_return_date = (
-                    date.fromisoformat(
-                        expected_return_date
-                    )
-                )
-
-            except ValueError:
-
-                return templates.TemplateResponse(
-                    request=request,
-                    name="pages/workshop_form.html",
-                    context={
-                        "equipment_list": equipment_list,
-                        "error": "تاريخ العودة المتوقع غير صحيح."
-                    },
-                    status_code=400
-                )
-
-            if (
-                parsed_expected_return_date
-                < parsed_dispatch_date
-            ):
-
-                return templates.TemplateResponse(
-                    request=request,
-                    name="pages/workshop_form.html",
-                    context={
-                        "equipment_list": equipment_list,
-                        "error": (
-                            "تاريخ العودة المتوقع لا يمكن "
-                            "أن يكون قبل تاريخ الإرسال."
-                        )
-                    },
-                    status_code=400
-                )
-
-        active_transfer = (
-            db.query(WorkshopTransfer)
-            .filter(
-                WorkshopTransfer.equipment_id
-                == equipment_id,
-                WorkshopTransfer.status
-                == "في الورشة"
-            )
-            .first()
-        )
-
-        if active_transfer:
-
-            return templates.TemplateResponse(
-                request=request,
-                name="pages/workshop_form.html",
-                context={
-                    "equipment_list": equipment_list,
-                    "error": (
-                        "هذا العتاد موجود حاليًا في ورشة "
-                        "خارجية ولا يمكن إرساله مرة أخرى."
-                    )
-                },
-                status_code=400
-            )
-
-        new_transfer = WorkshopTransfer(
-            equipment_id=equipment_id,
-            workshop_name=workshop_name,
-            dispatch_document=dispatch_document,
-            dispatch_date=parsed_dispatch_date,
-            expected_return_date=parsed_expected_return_date,
-            actual_return_date=None,
-            reason=reason,
-            status="في الورشة",
-            notes=notes
-        )
-
-        db.add(new_transfer)
-
-        equipment.status = "في ورشة خارجية"
-
-        db.commit()
-
-        return RedirectResponse(
-            url="/workshops",
-            status_code=303
-        )
-
-    except Exception:
-
-        db.rollback()
-        raise
-
-    finally:
-        db.close()
-
-
-# =========================================================
-# إرجاع العتاد من الورشة الخارجية
-# =========================================================
-
-@app.post("/workshops/{transfer_id}/return")
-def return_from_workshop(
-    transfer_id: int
-):
-
-    db = SessionLocal()
-
-    try:
-
-        transfer = (
-            db.query(WorkshopTransfer)
-            .filter(
-                WorkshopTransfer.id == transfer_id
-            )
-            .first()
-        )
-
-        if transfer is None:
-
-            return RedirectResponse(
-                url="/workshops",
-                status_code=303
-            )
-
-        if transfer.status != "في الورشة":
-
-            return RedirectResponse(
-                url="/workshops",
-                status_code=303
-            )
-
-        transfer.actual_return_date = date.today()
-
-        transfer.status = "عاد من الورشة"
-
-        equipment = (
-            db.query(Equipment)
-            .filter(
-                Equipment.id
-                == transfer.equipment_id
-            )
-            .first()
-        )
-
-        if equipment is not None:
-
-            equipment.status = "متاحة"
-
-        db.commit()
-
-        return RedirectResponse(
-            url="/workshops",
-            status_code=303
-        )
-
-    except Exception:
-
-        db.rollback()
-        raise
-
-    finally:
-        db.close()
+   

@@ -34,12 +34,6 @@ templates = Jinja2Templates(
     directory=str(TEMPLATES_DIR)
 )
 
-app = FastAPI(
-    title="Fleet Assets Manager",
-    description="نظام تسيير الحضيرة",
-    version="1.0.0"
-)
-
 
 # =========================================================
 # الصفحة الرئيسية

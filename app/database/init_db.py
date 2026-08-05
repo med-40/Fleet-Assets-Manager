@@ -1,19 +1,24 @@
-from app.database.session import engine
 from app.database.base import Base
+from app.database.session import engine
 
-# تحميل جميع النماذج
-from app import models
+# =========================================================
+# استيراد Models
+# =========================================================
+
+from app.models.user import User
+from app.models.role import Role
+from app.models.permission import Permission
 
 
-def create_database():
+# =========================================================
+# تهيئة قاعدة البيانات
+# =========================================================
+
+def init_database():
+    """
+    إنشاء الجداول المسجلة في Base.
+    """
 
     Base.metadata.create_all(
         bind=engine
     )
-
-    print("Database created successfully")
-
-
-if __name__ == "__main__":
-
-    create_database()

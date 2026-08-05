@@ -3,6 +3,7 @@ from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy.orm import relationship
 
 from app.database.base import Base
 
@@ -11,19 +12,11 @@ class Permission(Base):
 
     __tablename__ = "permissions"
 
-    # =====================================================
-    # المعرف
-    # =====================================================
-
     id = Column(
         Integer,
         primary_key=True,
         index=True
     )
-
-    # =====================================================
-    # الدور
-    # =====================================================
 
     role_id = Column(
         Integer,
@@ -32,19 +25,11 @@ class Permission(Base):
         index=True
     )
 
-    # =====================================================
-    # اسم الوحدة
-    # =====================================================
-
     module = Column(
         String(100),
         nullable=False,
         index=True
     )
-
-    # =====================================================
-    # مشاهدة
-    # =====================================================
 
     can_view = Column(
         Boolean,
@@ -52,19 +37,11 @@ class Permission(Base):
         default=False
     )
 
-    # =====================================================
-    # إضافة
-    # =====================================================
-
     can_create = Column(
         Boolean,
         nullable=False,
         default=False
     )
-
-    # =====================================================
-    # تعديل
-    # =====================================================
 
     can_edit = Column(
         Boolean,
@@ -72,12 +49,13 @@ class Permission(Base):
         default=False
     )
 
-    # =====================================================
-    # حذف
-    # =====================================================
-
     can_delete = Column(
         Boolean,
         nullable=False,
         default=False
+    )
+
+    role = relationship(
+        "Role",
+        back_populates="permissions"
     )

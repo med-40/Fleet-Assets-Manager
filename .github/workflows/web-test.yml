@@ -117,3 +117,51 @@ jobs:
               raise
 
           PY
+
+      # =====================================================
+      # Check Database Models
+      # =====================================================
+
+      - name: Check Database Models
+        run: |
+
+          echo "===================================="
+          echo "CHECKING DATABASE MODELS"
+          echo "===================================="
+
+          python - <<'PY'
+
+          from app.database.base import Base
+          import app.database.models
+
+          tables = set(Base.metadata.tables.keys())
+
+          required_tables = {
+              "equipment",
+              "maintenance_types",
+              "maintenance_schedules",
+              "maintenance_orders",
+              "meter_readings",
+          }
+
+          print("Registered tables:")
+
+          for table in sorted(tables):
+              print(" -", table)
+
+          missing = required_tables - tables
+
+          if missing:
+              print("")
+              print("MISSING TABLES:")
+              for table in sorted(missing):
+                  print(" -", table)
+
+              raise SystemExit(1)
+
+          print("")
+          print("====================================")
+          print("DATABASE MODELS: OK")
+          print("====================================")
+
+          PY

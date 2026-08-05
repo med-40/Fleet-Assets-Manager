@@ -1,6 +1,7 @@
 from app.database.base import Base
 from app.database.session import engine
 
+
 # =========================================================
 # استيراد Models
 # =========================================================
@@ -8,6 +9,15 @@ from app.database.session import engine
 from app.models.user import User
 from app.models.role import Role
 from app.models.permission import Permission
+
+from app.models.equipment import Equipment
+
+from app.modules.maintenance.models import (
+    MaintenanceOrder,
+    MaintenanceSchedule,
+    MaintenanceType,
+    MeterReading,
+)
 
 
 # =========================================================
@@ -22,3 +32,11 @@ def init_database():
     Base.metadata.create_all(
         bind=engine
     )
+
+
+# =========================================================
+# تشغيل مباشر
+# =========================================================
+
+if __name__ == "__main__":
+    init_database()

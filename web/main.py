@@ -25,7 +25,7 @@ from app.models.workshop_transfer import WorkshopTransfer
 # إعدادات التطبيق
 # =========================================================
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 TEMPLATES_DIR = BASE_DIR / "templates"
 INDEX_FILE = TEMPLATES_DIR / "index.html"

@@ -165,3 +165,55 @@ jobs:
           print("====================================")
 
           PY
+      # =====================================================
+      # Check Maintenance Router
+      # =====================================================
+
+      - name: Check Maintenance Router
+        run: |
+
+          echo "===================================="
+          echo "CHECKING MAINTENANCE ROUTER"
+          echo "===================================="
+
+          python - <<'PY'
+
+          from web.main import app
+
+          routes = {
+              route.path
+              for route in app.routes
+          }
+
+          required_routes = {
+              "/",
+              "/health",
+              "/maintenance/types",
+              "/maintenance/schedules",
+              "/maintenance/orders",
+              "/maintenance/due",
+          }
+
+          print("Registered routes:")
+
+          for route in sorted(routes):
+              print(" -", route)
+
+          missing = required_routes - routes
+
+          if missing:
+              print("")
+              print("MISSING ROUTES:")
+
+              for route in sorted(missing):
+                  print(" -", route)
+
+              raise SystemExit(1)
+
+          print("")
+          print("====================================")
+          print("MAINTENANCE ROUTER: OK")
+          print("====================================")
+
+          PY
+          

@@ -1,4 +1,6 @@
+from sqlalchemy import Boolean
 from sqlalchemy import Column
+from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 
@@ -9,17 +11,73 @@ class Permission(Base):
 
     __tablename__ = "permissions"
 
+    # =====================================================
+    # المعرف
+    # =====================================================
+
     id = Column(
         Integer,
-        primary_key=True
+        primary_key=True,
+        index=True
     )
 
-    name = Column(
+    # =====================================================
+    # الدور
+    # =====================================================
+
+    role_id = Column(
+        Integer,
+        ForeignKey("roles.id"),
+        nullable=False,
+        index=True
+    )
+
+    # =====================================================
+    # اسم الوحدة
+    # =====================================================
+
+    module = Column(
         String(100),
         nullable=False,
-        unique=True
+        index=True
     )
 
-    description = Column(
-        String(300)
+    # =====================================================
+    # مشاهدة
+    # =====================================================
+
+    can_view = Column(
+        Boolean,
+        nullable=False,
+        default=False
+    )
+
+    # =====================================================
+    # إضافة
+    # =====================================================
+
+    can_create = Column(
+        Boolean,
+        nullable=False,
+        default=False
+    )
+
+    # =====================================================
+    # تعديل
+    # =====================================================
+
+    can_edit = Column(
+        Boolean,
+        nullable=False,
+        default=False
+    )
+
+    # =====================================================
+    # حذف
+    # =====================================================
+
+    can_delete = Column(
+        Boolean,
+        nullable=False,
+        default=False
     )

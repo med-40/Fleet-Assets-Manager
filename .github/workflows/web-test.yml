@@ -233,6 +233,7 @@ jobs:
           from app.database.session import engine, SessionLocal
           from app.models.notification import Notification
           from app.models.equipment import Equipment
+          from app.models.equipment_type import EquipmentType
 
           from app.modules.maintenance.models import (
               MaintenanceSchedule,

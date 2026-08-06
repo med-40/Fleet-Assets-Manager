@@ -353,3 +353,115 @@ jobs:
               db.close()
 
           PY
+          # =====================================================
+      # Test Maintenance Meter Due
+      # =====================================================
+
+      - name: Test Maintenance Meter Due
+        run: |
+
+          echo "===================================="
+          echo "TESTING MAINTENANCE METER DUE"
+          echo "===================================="
+
+          python - <<'PY'
+
+          from datetime import date
+
+          from app.database.base import Base
+          from app.database.session import engine, SessionLocal
+
+          from app.models.notification import Notification
+          from app.models.equipment import Equipment
+          from app.models.equipment_type import EquipmentType
+          from app.models.workshop_transfer import WorkshopTransfer
+
+          from app.modules.maintenance.models import (
+              MaintenanceSchedule,
+              MeterReading,
+          )
+
+          from app.modules.maintenance.service import (
+              get_due_schedules,
+          )
+
+
+          Base.metadata.create_all(
+              bind=engine
+          )
+
+          db = SessionLocal()
+
+          try:
+
+              # =============================================
+              # قراءة عداد فعلية
+              # =============================================
+
+              reading = MeterReading(
+                  equipment_id=888888,
+                  reading_value=120000,
+                  reading_date=date.today(),
+              )
+
+              db.add(reading)
+
+              # =============================================
+              # خطة صيانة مستحقة بالعداد
+              # =============================================
+
+              schedule = MaintenanceSchedule(
+                  equipment_id=888888,
+                  name="اختبار صيانة حسب العداد",
+                  interval_km=10000,
+                  next_due_meter=120000,
+              )
+
+              db.add(schedule)
+              db.commit()
+
+              # =============================================
+              # فحص الاستحقاق
+              # =============================================
+
+              due = get_due_schedules(
+                  db=db,
+                  today=date.today(),
+              )
+
+              assert any(
+                  item.id == schedule.id
+                  for item in due
+              ), (
+                  "لم يتم اكتشاف الصيانة المستحقة بالعداد."
+              )
+
+              # =============================================
+              # التأكد من الإشعار
+              # =============================================
+
+              notification = (
+                  db.query(Notification)
+                  .filter(
+                      Notification.notification_type
+                      == "maintenance_due",
+                      Notification.title
+                      == "صيانة مستحقة",
+                  )
+                  .first()
+              )
+
+              assert notification is not None, (
+                  "لم يتم إنشاء إشعار الاستحقاق بالعداد."
+              )
+
+              print("")
+              print("====================================")
+              print("MAINTENANCE METER DUE: OK")
+              print("====================================")
+
+          finally:
+
+              db.close()
+
+          PY    

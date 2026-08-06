@@ -214,3 +214,139 @@ jobs:
           )
 
           PY
+      # =====================================================
+      # Test Maintenance Due Notification
+      # =====================================================
+
+      - name: Test Maintenance Due Notification
+        run: |
+
+          echo "===================================="
+          echo "TESTING MAINTENANCE DUE NOTIFICATION"
+          echo "===================================="
+
+          python - <<'PY'
+
+          from datetime import date, timedelta
+
+          from app.database.base import Base
+          from app.database.session import engine, SessionLocal
+          from app.models.notification import Notification
+
+          from app.modules.maintenance.models import (
+              MaintenanceSchedule,
+          )
+
+          from app.modules.maintenance.service import (
+              get_due_schedules,
+          )
+
+
+          # =====================================================
+          # إنشاء الجداول
+          # =====================================================
+
+          Base.metadata.create_all(
+              bind=engine
+          )
+
+
+          db = SessionLocal()
+
+
+          try:
+
+              # =================================================
+              # إنشاء خطة مستحقة بالتاريخ
+              # =================================================
+
+              schedule = MaintenanceSchedule(
+                  equipment_id=999999,
+                  name="اختبار صيانة دورية",
+                  interval_days=30,
+                  next_due_date=(
+                      date.today()
+                      - timedelta(days=1)
+                  ),
+              )
+
+              db.add(schedule)
+              db.commit()
+              db.refresh(schedule)
+
+
+              # =================================================
+              # فحص الاستحقاق
+              # =================================================
+
+              due = get_due_schedules(
+                  db=db,
+                  today=date.today(),
+              )
+
+
+              assert any(
+                  item.id == schedule.id
+                  for item in due
+              ), "لم يتم اكتشاف خطة الصيانة كمستحقة."
+
+
+              # =================================================
+              # التأكد من إنشاء الإشعار
+              # =================================================
+
+              notification = (
+                  db.query(Notification)
+                  .filter(
+                      Notification.notification_type
+                      == "maintenance_due",
+                      Notification.title
+                      == "صيانة مستحقة",
+                  )
+                  .first()
+              )
+
+
+              assert notification is not None, (
+                  "لم يتم إنشاء إشعار الصيانة المستحقة."
+              )
+
+
+              # =================================================
+              # اختبار منع التكرار
+              # =================================================
+
+              get_due_schedules(
+                  db=db,
+                  today=date.today(),
+              )
+
+
+              notifications_count = (
+                  db.query(Notification)
+                  .filter(
+                      Notification.notification_type
+                      == "maintenance_due",
+                      Notification.title
+                      == "صيانة مستحقة",
+                  )
+                  .count()
+              )
+
+
+              assert notifications_count == 1, (
+                  "تم إنشاء إشعار مكرر."
+              )
+
+
+              print("")
+              print("====================================")
+              print("MAINTENANCE NOTIFICATION: OK")
+              print("====================================")
+
+
+          finally:
+
+              db.close()
+
+          PY

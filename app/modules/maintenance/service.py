@@ -241,7 +241,8 @@ def get_last_meter_reading(
             MeterReading.equipment_id == equipment_id
         )
         .order_by(
-            MeterReading.reading_value.desc()
+            MeterReading.reading_date.desc(),
+            MeterReading.id.desc(),
         )
         .first()
     )

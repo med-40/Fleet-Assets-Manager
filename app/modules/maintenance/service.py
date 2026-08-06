@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from typing import Optional
 
 from sqlalchemy.orm import Session
+from app.models.notification import Notification
 
 from .models import (
     MaintenanceOrder,
@@ -558,6 +559,7 @@ def get_due_schedules(
     )
 
     due = []
+    notifications_created = False
 
     for schedule in schedules:
 
@@ -568,12 +570,16 @@ def get_due_schedules(
 
         meter_due = False
 
+        current_meter = None
+
         if (
             current_meter_by_equipment is not None
             and schedule.next_due_meter is not None
         ):
-            current_meter = current_meter_by_equipment.get(
-                schedule.equipment_id
+            current_meter = (
+                current_meter_by_equipment.get(
+                    schedule.equipment_id
+                )
             )
 
             if current_meter is not None:
@@ -582,7 +588,72 @@ def get_due_schedules(
                     >= schedule.next_due_meter
                 )
 
-        if date_due or meter_due:
-            due.append(schedule)
+        if not (date_due or meter_due):
+            continue
+
+        due.append(schedule)
+
+        # =====================================================
+        # إنشاء إشعار الصيانة المستحقة
+        # =====================================================
+
+        notification_type = "maintenance_due"
+
+        title = "صيانة مستحقة"
+
+        reasons = []
+
+        if date_due:
+            reasons.append(
+                f"تاريخ الاستحقاق: "
+                f"{schedule.next_due_date}"
+            )
+
+        if meter_due:
+            reasons.append(
+                f"العداد الحالي: {current_meter} كم، "
+                f"والاستحقاق: "
+                f"{schedule.next_due_meter} كم"
+            )
+
+        message = (
+            f"خطة الصيانة: {schedule.name}. "
+            + " | ".join(reasons)
+        )
+
+        # =====================================================
+        # منع تكرار نفس الإشعار
+        # =====================================================
+
+        existing_notification = (
+            db.query(Notification)
+            .filter(
+                Notification.notification_type
+                == notification_type,
+                Notification.title == title,
+                Notification.message == message,
+            )
+            .first()
+        )
+
+        if existing_notification is None:
+
+            notification = Notification(
+                title=title,
+                message=message,
+                notification_type=notification_type,
+                is_read=0,
+            )
+
+            db.add(notification)
+
+            notifications_created = True
+
+    # =========================================================
+    # حفظ الإشعارات الجديدة
+    # =========================================================
+
+    if notifications_created:
+        db.commit()
 
     return due

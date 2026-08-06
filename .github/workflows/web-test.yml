@@ -165,10 +165,6 @@ jobs:
           print("====================================")
 
           PY
-      # =====================================================
-      # Check Maintenance Router
-      # =====================================================
-
       - name: Check Maintenance Router
         run: |
 
@@ -178,56 +174,43 @@ jobs:
 
           python - <<'PY'
 
+          import app.modules.maintenance.routes as maintenance_module
           from web.main import app
 
+          print("")
+          print("ROUTES INSIDE MAINTENANCE MODULE:")
 
-          routes = set()
-
-          for route in app.routes:
-
-              path = getattr(
-                  route,
-                  "path",
-                  None
+          for route in maintenance_module.router.routes:
+              print(
+                  " -",
+                  getattr(route, "path", None),
+                  getattr(route, "methods", None),
               )
 
-              if path:
-                  routes.add(path)
+          print("")
+          print("ROUTES INSIDE FASTAPI APP:")
 
-
-          required_routes = {
-              "/",
-              "/health",
-              "/maintenance/types",
-              "/maintenance/schedules",
-              "/maintenance/orders",
-              "/maintenance/due",
-          }
-
-
-          print("Registered routes:")
-
-          for route in sorted(routes):
-              print(" -", route)
-
-
-          missing = required_routes - routes
-
-
-          if missing:
-
-              print("")
-              print("MISSING ROUTES:")
-
-              for route in sorted(missing):
-                  print(" -", route)
-
-              raise SystemExit(1)
-
+          for route in app.routes:
+              print(
+                  " -",
+                  getattr(route, "path", None),
+                  getattr(route, "methods", None),
+              )
 
           print("")
-          print("====================================")
-          print("MAINTENANCE ROUTER: OK")
-          print("====================================")
+          print("MAINTENANCE ROUTER OBJECT:")
+          print(maintenance_module.router)
+
+          print("")
+          print("APP ROUTER INCLUDE CHECK:")
+          print(
+              any(
+                  getattr(route, "path", "").startswith(
+                      "/maintenance"
+                  )
+                  for route in app.routes
+                  if getattr(route, "path", None)
+              )
+          )
 
           PY

@@ -559,6 +559,31 @@ def get_due_schedules(
         .all()
     )
 
+    # =====================================================
+    # جلب آخر قراءة عداد تلقائيًا
+    # =====================================================
+
+    if current_meter_by_equipment is None:
+
+        current_meter_by_equipment = {}
+
+        equipment_ids = {
+            schedule.equipment_id
+            for schedule in schedules
+        }
+
+        for equipment_id in equipment_ids:
+
+            last_reading = get_last_meter_reading(
+                db,
+                equipment_id,
+            )
+
+            if last_reading is not None:
+                current_meter_by_equipment[
+                    equipment_id
+                ] = last_reading.reading_value
+
     due = []
     notifications_created = False
 
@@ -571,32 +596,29 @@ def get_due_schedules(
 
         meter_due = False
 
-        current_meter = None
+        current_meter = (
+            current_meter_by_equipment.get(
+                schedule.equipment_id
+            )
+        )
 
         if (
-            current_meter_by_equipment is not None
-            and schedule.next_due_meter is not None
+            schedule.next_due_meter is not None
+            and current_meter is not None
         ):
-            current_meter = (
-                current_meter_by_equipment.get(
-                    schedule.equipment_id
-                )
+            meter_due = (
+                current_meter
+                >= schedule.next_due_meter
             )
-
-            if current_meter is not None:
-                meter_due = (
-                    current_meter
-                    >= schedule.next_due_meter
-                )
 
         if not (date_due or meter_due):
             continue
 
         due.append(schedule)
 
-        # =====================================================
-        # إنشاء إشعار الصيانة المستحقة
-        # =====================================================
+        # =================================================
+        # إشعار الصيانة المستحقة
+        # =================================================
 
         notification_type = "maintenance_due"
 
@@ -622,9 +644,9 @@ def get_due_schedules(
             + " | ".join(reasons)
         )
 
-        # =====================================================
+        # =================================================
         # منع تكرار نفس الإشعار
-        # =====================================================
+        # =================================================
 
         existing_notification = (
             db.query(Notification)
@@ -650,6 +672,10 @@ def get_due_schedules(
 
             notifications_created = True
 
+    if notifications_created:
+        db.commit()
+
+    return due
     # =========================================================
     # حفظ الإشعارات الجديدة
     # =========================================================

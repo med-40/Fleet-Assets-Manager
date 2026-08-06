@@ -180,10 +180,20 @@ jobs:
 
           from web.main import app
 
-          routes = {
-              route.path
-              for route in app.routes
-          }
+
+          routes = set()
+
+          for route in app.routes:
+
+              path = getattr(
+                  route,
+                  "path",
+                  None
+              )
+
+              if path:
+                  routes.add(path)
+
 
           required_routes = {
               "/",
@@ -194,14 +204,18 @@ jobs:
               "/maintenance/due",
           }
 
+
           print("Registered routes:")
 
           for route in sorted(routes):
               print(" -", route)
 
+
           missing = required_routes - routes
 
+
           if missing:
+
               print("")
               print("MISSING ROUTES:")
 
@@ -210,10 +224,10 @@ jobs:
 
               raise SystemExit(1)
 
+
           print("")
           print("====================================")
           print("MAINTENANCE ROUTER: OK")
           print("====================================")
 
           PY
-          

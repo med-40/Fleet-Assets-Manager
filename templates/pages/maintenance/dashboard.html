@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}
+لوحة الصيانة
+{% endblock %}
+
+{% block page_title %}
+وحدة الصيانة
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header"><div>
+    <h2>لوحة الصيانة</h2>
+
+    <p style="color:#6c757d; margin-top:8px;">
+        متابعة حالة الصيانة والخطط والمواعيد المستحقة.
+    </p>
+</div>
+
+</div><!-- =========================
+     الإحصائيات
+     ========================= --><div class="grid"><div class="card">
+
+    <div style="color:#6c757d;">
+        الصيانة المستحقة
+    </div>
+
+    <div style="
+        font-size:32px;
+        font-weight:bold;
+        margin-top:10px;
+        color:#dc3545;
+    ">
+        0
+    </div>
+
+</div>
+
+
+<div class="card">
+
+    <div style="color:#6c757d;">
+        الصيانة الجارية
+    </div>
+
+    <div style="
+        font-size:32px;
+        font-weight:bold;
+        margin-top:10px;
+        color:#ffc107;
+    ">
+        0
+    </div>
+
+</div>
+
+
+<div class="card">
+
+    <div style="color:#6c757d;">
+        خطط الصيانة
+    </div>
+
+    <div style="
+        font-size:32px;
+        font-weight:bold;
+        margin-top:10px;
+        color:#198754;
+    ">
+        0
+    </div>
+
+</div>
+
+
+<div class="card">
+
+    <div style="color:#6c757d;">
+        أنواع الصيانة
+    </div>
+
+    <div style="
+        font-size:32px;
+        font-weight:bold;
+        margin-top:10px;
+        color:#0d6efd;
+    ">
+        0
+    </div>
+
+</div>
+
+</div><!-- =========================
+     الصيانة المستحقة
+     ========================= --><div class="card" style="margin-top:25px;"><div class="page-header" style="margin-bottom:15px;">
+
+    <h3>
+        الصيانة المستحقة
+    </h3>
+
+    <a
+        href="/maintenance/due"
+        class="btn btn-danger"
+    >
+        عرض المستحقات
+    </a>
+
+</div>
+
+
+<div class="table-container">
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>
+                    العتاد
+                </th>
+
+                <th>
+                    خطة الصيانة
+                </th>
+
+                <th>
+                    الاستحقاق
+                </th>
+
+                <th>
+                    الحالة
+                </th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            <tr>
+
+                <td colspan="4"
+                    style="
+                        text-align:center;
+                        color:#6c757d;
+                        padding:25px;
+                    "
+                >
+                    لا توجد صيانة مستحقة حاليًا.
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+</div><!-- =========================
+     روابط وحدة الصيانة
+     ========================= --><div class="grid" style="margin-top:25px;"><div class="card">
+
+    <h3>
+        خطط الصيانة
+    </h3>
+
+    <p style="color:#6c757d;">
+        إدارة شروط الصيانة الدورية حسب الأيام أو العداد.
+    </p>
+
+    <a
+        href="/maintenance/schedules"
+        class="btn btn-primary"
+    >
+        إدارة الخطط
+    </a>
+
+</div>
+
+
+<div class="card">
+
+    <h3>
+        أوامر الصيانة
+    </h3>
+
+    <p style="color:#6c757d;">
+        تسجيل ومتابعة عمليات الصيانة المنفذة والجارية.
+    </p>
+
+    <a
+        href="/maintenance/orders"
+        class="btn btn-primary"
+    >
+        أوامر الصيانة
+    </a>
+
+</div>
+
+
+<div class="card">
+
+    <h3>
+        أنواع الصيانة
+    </h3>
+
+    <p style="color:#6c757d;">
+        تعريف أنواع الصيانة المستخدمة في النظام.
+    </p>
+
+    <a
+        href="/maintenance/types"
+        class="btn btn-primary"
+    >
+        أنواع الصيانة
+    </a>
+
+</div>
+
+
+<div class="card">
+
+    <h3>
+        قراءات العداد
+    </h3>
+
+    <p style="color:#6c757d;">
+        تسجيل ومتابعة قراءات عداد العتاد.
+    </p>
+
+    <a
+        href="/maintenance/meter-readings"
+        class="btn btn-primary"
+    >
+        قراءات العداد
+    </a>
+
+</div>
+
+</div>{% endblock %}

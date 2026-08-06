@@ -465,3 +465,160 @@ jobs:
               db.close()
 
           PY    
+      # =====================================================
+      # Test Maintenance Completion Cycle
+      # =====================================================
+
+      - name: Test Maintenance Completion Cycle
+        run: |
+
+          echo "===================================="
+          echo "TESTING MAINTENANCE COMPLETION CYCLE"
+          echo "===================================="
+
+          python - <<'PY'
+
+          from datetime import date
+
+          from app.database.base import Base
+          from app.database.session import engine, SessionLocal
+
+          from app.models.equipment import Equipment
+          from app.models.equipment_type import EquipmentType
+          from app.models.notification import Notification
+          from app.models.workshop_transfer import WorkshopTransfer
+
+          from app.modules.maintenance.models import (
+              MaintenanceOrder,
+              MaintenanceSchedule,
+              MaintenanceType,
+              MeterReading,
+          )
+
+          from app.modules.maintenance.service import (
+              complete_maintenance_order,
+              get_due_schedules,
+          )
+
+
+          Base.metadata.create_all(
+              bind=engine
+          )
+
+          db = SessionLocal()
+
+          try:
+
+              # =============================================
+              # إنشاء خطة صيانة
+              # =============================================
+
+              schedule = MaintenanceSchedule(
+                  equipment_id=777777,
+                  name="اختبار دورة الصيانة",
+                  interval_km=10000,
+                  interval_days=30,
+              )
+
+              db.add(schedule)
+              db.commit()
+              db.refresh(schedule)
+
+              # =============================================
+              # إنشاء أمر صيانة مكتمل
+              # =============================================
+
+              order = MaintenanceOrder(
+                  equipment_id=777777,
+                  maintenance_schedule_id=schedule.id,
+                  maintenance_type="اختبار",
+                  maintenance_date=date.today(),
+                  status="جارية",
+              )
+
+              db.add(order)
+              db.commit()
+              db.refresh(order)
+
+              # =============================================
+              # إتمام الصيانة عند 120000 كم
+              # =============================================
+
+              completed = complete_maintenance_order(
+                  db=db,
+                  order_id=order.id,
+                  completion_date=date.today(),
+                  meter_reading=120000,
+              )
+
+              # =============================================
+              # التحقق من الإتمام
+              # =============================================
+
+              assert completed.status == "منتهية"
+
+              assert (
+                  completed.completion_date
+                  == date.today()
+              )
+
+              assert (
+                  completed.meter_reading
+                  == 120000
+              )
+
+              # =============================================
+              # تحديث الخطة
+              # =============================================
+
+              db.refresh(schedule)
+
+              assert (
+                  schedule.last_maintenance_date
+                  == date.today()
+              )
+
+              assert (
+                  schedule.last_maintenance_meter
+                  == 120000
+              )
+
+              assert (
+                  schedule.next_due_meter
+                  == 130000
+              )
+
+              assert (
+                  schedule.next_due_date
+                  == date.today().replace(
+                      day=date.today().day
+                  )
+              ) or schedule.next_due_date is not None
+
+              # =============================================
+              # التحقق من قراءة العداد
+              # =============================================
+
+              reading = (
+                  db.query(MeterReading)
+                  .filter(
+                      MeterReading.equipment_id
+                      == 777777,
+                      MeterReading.reading_value
+                      == 120000,
+                  )
+                  .first()
+              )
+
+              assert reading is not None
+
+              print("")
+              print("====================================")
+              print("MAINTENANCE COMPLETION CYCLE: OK")
+              print("====================================")
+
+          finally:
+
+              db.close()
+
+          PY

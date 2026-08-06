@@ -232,6 +232,7 @@ jobs:
           from app.database.base import Base
           from app.database.session import engine, SessionLocal
           from app.models.notification import Notification
+          from app.models.equipment import Equipment
 
           from app.modules.maintenance.models import (
               MaintenanceSchedule,

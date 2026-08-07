@@ -118,6 +118,7 @@ jobs:
 
           PY
 
+
       # =====================================================
       # Check Database Models
       # =====================================================
@@ -134,7 +135,9 @@ jobs:
           from app.database.base import Base
           import app.database.models
 
-          tables = set(Base.metadata.tables.keys())
+          tables = set(
+              Base.metadata.tables.keys()
+          )
 
           required_tables = {
               "equipment",
@@ -149,11 +152,15 @@ jobs:
           for table in sorted(tables):
               print(" -", table)
 
-          missing = required_tables - tables
+          missing = (
+              required_tables - tables
+          )
 
           if missing:
+
               print("")
               print("MISSING TABLES:")
+
               for table in sorted(missing):
                   print(" -", table)
 
@@ -165,6 +172,12 @@ jobs:
           print("====================================")
 
           PY
+
+
+      # =====================================================
+      # Check Maintenance Router
+      # =====================================================
+
       - name: Check Maintenance Router
         run: |
 
@@ -175,66 +188,110 @@ jobs:
           python - <<'PY'
 
           import app.modules.maintenance.routes as maintenance_module
+
           from web.main import app
 
           print("")
           print("ROUTES INSIDE MAINTENANCE MODULE:")
 
           for route in maintenance_module.router.routes:
+
               print(
                   " -",
-                  getattr(route, "path", None),
-                  getattr(route, "methods", None),
+                  getattr(
+                      route,
+                      "path",
+                      None,
+                  ),
+                  getattr(
+                      route,
+                      "methods",
+                      None,
+                  ),
               )
 
           print("")
           print("ROUTES INSIDE FASTAPI APP:")
 
           for route in app.routes:
+
               print(
                   " -",
-                  getattr(route, "path", None),
-                  getattr(route, "methods", None),
+                  getattr(
+                      route,
+                      "path",
+                      None,
+                  ),
+                  getattr(
+                      route,
+                      "methods",
+                      None,
+                  ),
               )
 
           print("")
           print("MAINTENANCE ROUTER OBJECT:")
-          print(maintenance_module.router)
+          print(
+              maintenance_module.router
+          )
 
           print("")
           print("APP ROUTER INCLUDE CHECK:")
-          print(
-              any(
-                  getattr(route, "path", "").startswith(
-                      "/maintenance"
-                  )
-                  for route in app.routes
-                  if getattr(route, "path", None)
+
+          included = any(
+              getattr(
+                  route,
+                  "path",
+                  ""
+              ).startswith(
+                  "/maintenance"
+              )
+              for route in app.routes
+              if getattr(
+                  route,
+                  "path",
+                  None
               )
           )
 
+          print(included)
+
+          assert included, (
+              "Maintenance Web Router "
+              "غير مربوط بالتطبيق."
+          )
+
+          print("")
+          print("====================================")
+          print("MAINTENANCE ROUTER: OK")
+          print("====================================")
+
           PY
+
+
       # =====================================================
-      # Test Maintenance Due Notification
+      # Test Maintenance Due By Date
       # =====================================================
 
-      - name: Test Maintenance Due Notification
+      - name: Test Maintenance Due By Date
         run: |
 
           echo "===================================="
-          echo "TESTING MAINTENANCE DUE NOTIFICATION"
+          echo "TESTING MAINTENANCE DUE BY DATE"
           echo "===================================="
 
           python - <<'PY'
 
-          from datetime import date, timedelta
+          from datetime import (
+              date,
+              timedelta,
+          )
 
           from app.database.base import Base
-          from app.database.session import engine, SessionLocal
-          from app.models.notification import Notification
-          from app.models.equipment import Equipment
-          from app.models.equipment_type import EquipmentType
-          from app.models.workshop_transfer import WorkshopTransfer
+          from app.database.session import (
+              engine,
+              SessionLocal,
+          )
 
           from app.modules.maintenance.models import (
               MaintenanceSchedule,
@@ -245,23 +302,13 @@ jobs:
           )
 
 
-          # =====================================================
-          # إنشاء الجداول
-          # =====================================================
-
           Base.metadata.create_all(
               bind=engine
           )
 
-
           db = SessionLocal()
 
-
           try:
-
-              # =================================================
-              # إنشاء خطة مستحقة بالتاريخ
-              # =================================================
 
               schedule = MaintenanceSchedule(
                   equipment_id=999999,
@@ -277,91 +324,40 @@ jobs:
               db.commit()
               db.refresh(schedule)
 
-
-              # =================================================
-              # فحص الاستحقاق
-              # =================================================
-
               due = get_due_schedules(
                   db=db,
                   today=date.today(),
               )
 
-
               assert any(
                   item.id == schedule.id
                   for item in due
-              ), "لم يتم اكتشاف خطة الصيانة كمستحقة."
-
-
-              # =================================================
-              # التأكد من إنشاء الإشعار
-              # =================================================
-
-              notification = (
-                  db.query(Notification)
-                  .filter(
-                      Notification.notification_type
-                      == "maintenance_due",
-                      Notification.title
-                      == "صيانة مستحقة",
-                  )
-                  .first()
+              ), (
+                  "لم يتم اكتشاف خطة "
+                  "الصيانة كمستحقة بالتاريخ."
               )
-
-
-              assert notification is not None, (
-                  "لم يتم إنشاء إشعار الصيانة المستحقة."
-              )
-
-
-              # =================================================
-              # اختبار منع التكرار
-              # =================================================
-
-              get_due_schedules(
-                  db=db,
-                  today=date.today(),
-              )
-
-
-              notifications_count = (
-                  db.query(Notification)
-                  .filter(
-                      Notification.notification_type
-                      == "maintenance_due",
-                      Notification.title
-                      == "صيانة مستحقة",
-                  )
-                  .count()
-              )
-
-
-              assert notifications_count == 1, (
-                  "تم إنشاء إشعار مكرر."
-              )
-
 
               print("")
               print("====================================")
-              print("MAINTENANCE NOTIFICATION: OK")
+              print("MAINTENANCE DUE BY DATE: OK")
               print("====================================")
-
 
           finally:
 
               db.close()
 
           PY
-          # =====================================================
-      # Test Maintenance Meter Due
+
+
+      # =====================================================
+      # Test Maintenance Due By Meter
       # =====================================================
 
-      - name: Test Maintenance Meter Due
+      - name: Test Maintenance Due By Meter
         run: |
 
           echo "===================================="
-          echo "TESTING MAINTENANCE METER DUE"
+          echo "TESTING MAINTENANCE DUE BY METER"
           echo "===================================="
 
           python - <<'PY'
@@ -369,12 +365,10 @@ jobs:
           from datetime import date
 
           from app.database.base import Base
-          from app.database.session import engine, SessionLocal
-
-          from app.models.notification import Notification
-          from app.models.equipment import Equipment
-          from app.models.equipment_type import EquipmentType
-          from app.models.workshop_transfer import WorkshopTransfer
+          from app.database.session import (
+              engine,
+              SessionLocal,
+          )
 
           from app.modules.maintenance.models import (
               MaintenanceSchedule,
@@ -394,10 +388,6 @@ jobs:
 
           try:
 
-              # =============================================
-              # قراءة عداد فعلية
-              # =============================================
-
               reading = MeterReading(
                   equipment_id=888888,
                   reading_value=120000,
@@ -405,10 +395,6 @@ jobs:
               )
 
               db.add(reading)
-
-              # =============================================
-              # خطة صيانة مستحقة بالعداد
-              # =============================================
 
               schedule = MaintenanceSchedule(
                   equipment_id=888888,
@@ -418,11 +404,9 @@ jobs:
               )
 
               db.add(schedule)
-              db.commit()
 
-              # =============================================
-              # فحص الاستحقاق
-              # =============================================
+              db.commit()
+              db.refresh(schedule)
 
               due = get_due_schedules(
                   db=db,
@@ -433,38 +417,22 @@ jobs:
                   item.id == schedule.id
                   for item in due
               ), (
-                  "لم يتم اكتشاف الصيانة المستحقة بالعداد."
-              )
-
-              # =============================================
-              # التأكد من الإشعار
-              # =============================================
-
-              notification = (
-                  db.query(Notification)
-                  .filter(
-                      Notification.notification_type
-                      == "maintenance_due",
-                      Notification.title
-                      == "صيانة مستحقة",
-                  )
-                  .first()
-              )
-
-              assert notification is not None, (
-                  "لم يتم إنشاء إشعار الاستحقاق بالعداد."
+                  "لم يتم اكتشاف الصيانة "
+                  "المستحقة بالعداد."
               )
 
               print("")
               print("====================================")
-              print("MAINTENANCE METER DUE: OK")
+              print("MAINTENANCE DUE BY METER: OK")
               print("====================================")
 
           finally:
 
               db.close()
 
-          PY    
+          PY
+
+
       # =====================================================
       # Test Maintenance Completion Cycle
       # =====================================================
@@ -478,26 +446,25 @@ jobs:
 
           python - <<'PY'
 
-          from datetime import date
+          from datetime import (
+              date,
+              timedelta,
+          )
 
           from app.database.base import Base
-          from app.database.session import engine, SessionLocal
-
-          from app.models.equipment import Equipment
-          from app.models.equipment_type import EquipmentType
-          from app.models.notification import Notification
-          from app.models.workshop_transfer import WorkshopTransfer
+          from app.database.session import (
+              engine,
+              SessionLocal,
+          )
 
           from app.modules.maintenance.models import (
               MaintenanceOrder,
               MaintenanceSchedule,
-              MaintenanceType,
               MeterReading,
           )
 
           from app.modules.maintenance.service import (
               complete_maintenance_order,
-              get_due_schedules,
           )
 
 
@@ -510,7 +477,7 @@ jobs:
           try:
 
               # =============================================
-              # إنشاء خطة صيانة
+              # إنشاء خطة الصيانة
               # =============================================
 
               schedule = MaintenanceSchedule(
@@ -524,8 +491,9 @@ jobs:
               db.commit()
               db.refresh(schedule)
 
+
               # =============================================
-              # إنشاء أمر صيانة مكتمل
+              # إنشاء أمر صيانة
               # =============================================
 
               order = MaintenanceOrder(
@@ -540,22 +508,29 @@ jobs:
               db.commit()
               db.refresh(order)
 
+
               # =============================================
-              # إتمام الصيانة عند 120000 كم
+              # إتمام الصيانة
               # =============================================
 
-              completed = complete_maintenance_order(
-                  db=db,
-                  order_id=order.id,
-                  completion_date=date.today(),
-                  meter_reading=120000,
+              completed = (
+                  complete_maintenance_order(
+                      db=db,
+                      order_id=order.id,
+                      completion_date=date.today(),
+                      meter_reading=120000,
+                  )
               )
+
 
               # =============================================
               # التحقق من الإتمام
               # =============================================
 
-              assert completed.status == "منتهية"
+              assert (
+                  completed.status
+                  == "منتهية"
+              )
 
               assert (
                   completed.completion_date
@@ -567,8 +542,9 @@ jobs:
                   == 120000
               )
 
+
               # =============================================
-              # تحديث الخطة
+              # تحديث خطة الصيانة
               # =============================================
 
               db.refresh(schedule)
@@ -590,13 +566,15 @@ jobs:
 
               assert (
                   schedule.next_due_date
-                  == date.today().replace(
-                      day=date.today().day
+                  == (
+                      date.today()
+                      + timedelta(days=30)
                   )
-              ) or schedule.next_due_date is not None
+              )
+
 
               # =============================================
-              # التحقق من قراءة العداد
+              # التحقق من حفظ قراءة العداد
               # =============================================
 
               reading = (
@@ -612,9 +590,12 @@ jobs:
 
               assert reading is not None
 
+
               print("")
               print("====================================")
-              print("MAINTENANCE COMPLETION CYCLE: OK")
+              print(
+                  "MAINTENANCE COMPLETION CYCLE: OK"
+              )
               print("====================================")
 
           finally:

@@ -2,7 +2,6 @@ from datetime import date, timedelta
 from typing import Optional
 
 from sqlalchemy.orm import Session
-from app.models.notification import Notification
 
 from .models import (
     MaintenanceOrder,
@@ -585,7 +584,6 @@ def get_due_schedules(
                 ] = last_reading.reading_value
 
     due = []
-    notifications_created = False
 
     for schedule in schedules:
 
@@ -611,76 +609,7 @@ def get_due_schedules(
                 >= schedule.next_due_meter
             )
 
-        if not (date_due or meter_due):
-            continue
-
-        due.append(schedule)
-
-        # =================================================
-        # إشعار الصيانة المستحقة
-        # =================================================
-
-        notification_type = "maintenance_due"
-
-        title = "صيانة مستحقة"
-
-        reasons = []
-
-        if date_due:
-            reasons.append(
-                f"تاريخ الاستحقاق: "
-                f"{schedule.next_due_date}"
-            )
-
-        if meter_due:
-            reasons.append(
-                f"العداد الحالي: {current_meter} كم، "
-                f"والاستحقاق: "
-                f"{schedule.next_due_meter} كم"
-            )
-
-        message = (
-            f"خطة الصيانة: {schedule.name}. "
-            + " | ".join(reasons)
-        )
-
-        # =================================================
-        # منع تكرار نفس الإشعار
-        # =================================================
-
-        existing_notification = (
-            db.query(Notification)
-            .filter(
-                Notification.notification_type
-                == notification_type,
-                Notification.title == title,
-                Notification.message == message,
-            )
-            .first()
-        )
-
-        if existing_notification is None:
-
-            notification = Notification(
-                title=title,
-                message=message,
-                notification_type=notification_type,
-                is_read=0,
-            )
-
-            db.add(notification)
-
-            notifications_created = True
-
-    if notifications_created:
-        db.commit()
-
-    return due
-    # =========================================================
-    # حفظ الإشعارات الجديدة
-    # =========================================================
-
-    if notifications_created:
-        db.commit()
+        if date_due or meter_due:
+            due.append(schedule)
 
     return due

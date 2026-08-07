@@ -266,10 +266,10 @@ jobs:
               )
 
 
-          assert "/" in web_paths, (
-              "Maintenance Web Router "
-              "لا يحتوي على الصفحة الرئيسية."
-          )
+          assert "/maintenance/" in web_paths, (
+    "Maintenance Web Router "
+    "لا يحتوي على الصفحة الرئيسية."
+)
 
 
           # =================================================

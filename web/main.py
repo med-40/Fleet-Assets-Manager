@@ -6,7 +6,13 @@ from app.core.config import (
     APP_VERSION,
 )
 
-from app.modules.maintenance.routes import router as maintenance_router
+from app.modules.maintenance.routes import (
+    router as maintenance_router,
+)
+
+from web.routers.maintenance import (
+    router as maintenance_web_router,
+)
 
 
 # =========================================================
@@ -24,8 +30,14 @@ app = FastAPI(
 # Routers
 # =========================================================
 
+# API الخاص بوحدة الصيانة
 app.include_router(
     maintenance_router
+)
+
+# واجهة Web الخاصة بوحدة الصيانة
+app.include_router(
+    maintenance_web_router
 )
 
 

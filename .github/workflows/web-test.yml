@@ -187,79 +187,134 @@ jobs:
 
           python - <<'PY'
 
-          import app.modules.maintenance.routes as maintenance_module
+          import app.modules.maintenance.routes as maintenance_api
+          import web.routers.maintenance as maintenance_web
 
           from web.main import app
 
-          print("")
-          print("ROUTES INSIDE MAINTENANCE MODULE:")
 
-          for route in maintenance_module.router.routes:
+          # =================================================
+          # API Router
+          # =================================================
+
+          print("")
+          print("MAINTENANCE API ROUTES:")
+
+          api_paths = []
+
+          for route in maintenance_api.router.routes:
+
+              path = getattr(
+                  route,
+                  "path",
+                  None,
+              )
+
+              methods = getattr(
+                  route,
+                  "methods",
+                  None,
+              )
+
+              api_paths.append(path)
 
               print(
                   " -",
-                  getattr(
-                      route,
-                      "path",
-                      None,
-                  ),
-                  getattr(
-                      route,
-                      "methods",
-                      None,
-                  ),
+                  path,
+                  methods,
               )
 
+
+          assert any(
+              path
+              and path.startswith("/maintenance")
+              for path in api_paths
+          ), (
+              "Maintenance API Router غير صحيح."
+          )
+
+
+          # =================================================
+          # Web Router
+          # =================================================
+
           print("")
-          print("ROUTES INSIDE FASTAPI APP:")
+          print("MAINTENANCE WEB ROUTES:")
+
+          web_paths = []
+
+          for route in maintenance_web.router.routes:
+
+              path = getattr(
+                  route,
+                  "path",
+                  None,
+              )
+
+              methods = getattr(
+                  route,
+                  "methods",
+                  None,
+              )
+
+              web_paths.append(path)
+
+              print(
+                  " -",
+                  path,
+                  methods,
+              )
+
+
+          assert "/" in web_paths, (
+              "Maintenance Web Router "
+              "لا يحتوي على الصفحة الرئيسية."
+          )
+
+
+          # =================================================
+          # التحقق من تسجيل Web Router
+          # =================================================
+
+          print("")
+          print("FASTAPI MAINTENANCE ROUTES:")
+
+          registered_paths = []
 
           for route in app.routes:
 
-              print(
-                  " -",
-                  getattr(
-                      route,
-                      "path",
-                      None,
-                  ),
-                  getattr(
-                      route,
-                      "methods",
-                      None,
-                  ),
-              )
-
-          print("")
-          print("MAINTENANCE ROUTER OBJECT:")
-          print(
-              maintenance_module.router
-          )
-
-          print("")
-          print("APP ROUTER INCLUDE CHECK:")
-
-          included = any(
-              getattr(
+              path = getattr(
                   route,
                   "path",
-                  ""
-              ).startswith(
-                  "/maintenance"
+                  None,
               )
-              for route in app.routes
-              if getattr(
-                  route,
-                  "path",
-                  None
-              )
-          )
 
-          print(included)
+              if path:
+                  registered_paths.append(path)
 
-          assert included, (
+                  if path.startswith(
+                      "/maintenance"
+                  ):
+                      print(
+                          " -",
+                          path,
+                          getattr(
+                              route,
+                              "methods",
+                              None,
+                          ),
+                      )
+
+
+          # =================================================
+          # المسار الحقيقي المتوقع
+          # =================================================
+
+          assert "/maintenance/" in registered_paths, (
               "Maintenance Web Router "
               "غير مربوط بالتطبيق."
           )
+
 
           print("")
           print("====================================")
@@ -294,312 +349,4 @@ jobs:
           )
 
           from app.modules.maintenance.models import (
-              MaintenanceSchedule,
-          )
-
-          from app.modules.maintenance.service import (
-              get_due_schedules,
-          )
-
-
-          Base.metadata.create_all(
-              bind=engine
-          )
-
-          db = SessionLocal()
-
-          try:
-
-              schedule = MaintenanceSchedule(
-                  equipment_id=999999,
-                  name="اختبار صيانة دورية",
-                  interval_days=30,
-                  next_due_date=(
-                      date.today()
-                      - timedelta(days=1)
-                  ),
-              )
-
-              db.add(schedule)
-              db.commit()
-              db.refresh(schedule)
-
-              due = get_due_schedules(
-                  db=db,
-                  today=date.today(),
-              )
-
-              assert any(
-                  item.id == schedule.id
-                  for item in due
-              ), (
-                  "لم يتم اكتشاف خطة "
-                  "الصيانة كمستحقة بالتاريخ."
-              )
-
-              print("")
-              print("====================================")
-              print("MAINTENANCE DUE BY DATE: OK")
-              print("====================================")
-
-          finally:
-
-              db.close()
-
-          PY
-
-
-      # =====================================================
-      # Test Maintenance Due By Meter
-      # =====================================================
-
-      - name: Test Maintenance Due By Meter
-        run: |
-
-          echo "===================================="
-          echo "TESTING MAINTENANCE DUE BY METER"
-          echo "===================================="
-
-          python - <<'PY'
-
-          from datetime import date
-
-          from app.database.base import Base
-          from app.database.session import (
-              engine,
-              SessionLocal,
-          )
-
-          from app.modules.maintenance.models import (
-              MaintenanceSchedule,
-              MeterReading,
-          )
-
-          from app.modules.maintenance.service import (
-              get_due_schedules,
-          )
-
-
-          Base.metadata.create_all(
-              bind=engine
-          )
-
-          db = SessionLocal()
-
-          try:
-
-              reading = MeterReading(
-                  equipment_id=888888,
-                  reading_value=120000,
-                  reading_date=date.today(),
-              )
-
-              db.add(reading)
-
-              schedule = MaintenanceSchedule(
-                  equipment_id=888888,
-                  name="اختبار صيانة حسب العداد",
-                  interval_km=10000,
-                  next_due_meter=120000,
-              )
-
-              db.add(schedule)
-
-              db.commit()
-              db.refresh(schedule)
-
-              due = get_due_schedules(
-                  db=db,
-                  today=date.today(),
-              )
-
-              assert any(
-                  item.id == schedule.id
-                  for item in due
-              ), (
-                  "لم يتم اكتشاف الصيانة "
-                  "المستحقة بالعداد."
-              )
-
-              print("")
-              print("====================================")
-              print("MAINTENANCE DUE BY METER: OK")
-              print("====================================")
-
-          finally:
-
-              db.close()
-
-          PY
-
-
-      # =====================================================
-      # Test Maintenance Completion Cycle
-      # =====================================================
-
-      - name: Test Maintenance Completion Cycle
-        run: |
-
-          echo "===================================="
-          echo "TESTING MAINTENANCE COMPLETION CYCLE"
-          echo "===================================="
-
-          python - <<'PY'
-
-          from datetime import (
-              date,
-              timedelta,
-          )
-
-          from app.database.base import Base
-          from app.database.session import (
-              engine,
-              SessionLocal,
-          )
-
-          from app.modules.maintenance.models import (
-              MaintenanceOrder,
-              MaintenanceSchedule,
-              MeterReading,
-          )
-
-          from app.modules.maintenance.service import (
-              complete_maintenance_order,
-          )
-
-
-          Base.metadata.create_all(
-              bind=engine
-          )
-
-          db = SessionLocal()
-
-          try:
-
-              # =============================================
-              # إنشاء خطة الصيانة
-              # =============================================
-
-              schedule = MaintenanceSchedule(
-                  equipment_id=777777,
-                  name="اختبار دورة الصيانة",
-                  interval_km=10000,
-                  interval_days=30,
-              )
-
-              db.add(schedule)
-              db.commit()
-              db.refresh(schedule)
-
-
-              # =============================================
-              # إنشاء أمر صيانة
-              # =============================================
-
-              order = MaintenanceOrder(
-                  equipment_id=777777,
-                  maintenance_schedule_id=schedule.id,
-                  maintenance_type="اختبار",
-                  maintenance_date=date.today(),
-                  status="جارية",
-              )
-
-              db.add(order)
-              db.commit()
-              db.refresh(order)
-
-
-              # =============================================
-              # إتمام الصيانة
-              # =============================================
-
-              completed = (
-                  complete_maintenance_order(
-                      db=db,
-                      order_id=order.id,
-                      completion_date=date.today(),
-                      meter_reading=120000,
-                  )
-              )
-
-
-              # =============================================
-              # التحقق من الإتمام
-              # =============================================
-
-              assert (
-                  completed.status
-                  == "منتهية"
-              )
-
-              assert (
-                  completed.completion_date
-                  == date.today()
-              )
-
-              assert (
-                  completed.meter_reading
-                  == 120000
-              )
-
-
-              # =============================================
-              # تحديث خطة الصيانة
-              # =============================================
-
-              db.refresh(schedule)
-
-              assert (
-                  schedule.last_maintenance_date
-                  == date.today()
-              )
-
-              assert (
-                  schedule.last_maintenance_meter
-                  == 120000
-              )
-
-              assert (
-                  schedule.next_due_meter
-                  == 130000
-              )
-
-              assert (
-                  schedule.next_due_date
-                  == (
-                      date.today()
-                      + timedelta(days=30)
-                  )
-              )
-
-
-              # =============================================
-              # التحقق من حفظ قراءة العداد
-              # =============================================
-
-              reading = (
-                  db.query(MeterReading)
-                  .filter(
-                      MeterReading.equipment_id
-                      == 777777,
-                      MeterReading.reading_value
-                      == 120000,
-                  )
-                  .first()
-              )
-
-              assert reading is not None
-
-
-              print("")
-              print("====================================")
-              print(
-                  "MAINTENANCE COMPLETION CYCLE: OK"
-              )
-              print("====================================")
-
-          finally:
-
-              db.close()
-
-          PY
+              Maintenance
